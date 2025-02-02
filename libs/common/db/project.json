@@ -1,0 +1,9 @@
+{
+  "name": "event7-common-db",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/common/db/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project event7-common-db --web",
+  "targets": {}
+}

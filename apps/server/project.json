@@ -38,6 +38,13 @@
       "options": {
         "passWithNoTests": true
       }
+    },
+    "migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "drizzle-kit migrate --config=./src/db.config.ts",
+        "cwd": "apps/server"
+      }
     }
   }
 }

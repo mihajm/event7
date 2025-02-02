@@ -11,8 +11,3 @@ services:
       POSTGRES_PASSWORD: verysafe
       POSTGRES_DB: event7
     restart: always
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-volumes:
-  pgdata:

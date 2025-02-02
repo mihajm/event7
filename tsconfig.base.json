@@ -15,6 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@e7/common/db": ["libs/common/db/src/index.ts"],
       "@e7/event-definition/db": ["libs/event-definition/db/src/index.ts"],
       "@e7/event-definition/server": [
         "libs/event-definition/server/src/index.ts"
