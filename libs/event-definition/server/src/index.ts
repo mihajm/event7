@@ -1,1 +1,1 @@
-export * from './lib/event-definition-server.module';
+export * from './lib/event-definition.module';

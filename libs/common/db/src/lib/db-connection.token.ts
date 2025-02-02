@@ -2,11 +2,11 @@ import { type InjectionToken, type Provider } from '@nestjs/common';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 
-type DB = NodePgDatabase<Record<string, never>> & {
+export type Database = NodePgDatabase<Record<string, never>> & {
   $client: Pool;
 };
 
-export const DRIZZLE: InjectionToken<DB> = 'EVENT7_DRIZZLE';
+export const DRIZZLE: InjectionToken<Database> = 'EVENT7_DRIZZLE';
 
 type DrizzleOptions = {
   url: string;
@@ -26,7 +26,7 @@ export function provideDrizzle<TConfig>(
 ): Provider {
   return {
     provide: DRIZZLE,
-    useFactory: (config: TConfig): DB => {
+    useFactory: (config: TConfig): Database => {
       const { url, pool = {} } = opt.resolveOptions(config);
       const dbPool = new Pool({
         connectionString: url,

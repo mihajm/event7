@@ -23,15 +23,6 @@ export default [
           ],
         },
       ],
-      '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        {
-          disallowTypeAnnotations: false,
-          prefer: 'type-imports',
-          fixStyle: 'inline-type-imports',
-        },
-      ],
     },
   },
   {

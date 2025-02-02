@@ -1,2 +1,2 @@
 export * from './lib/database.module';
-export { DRIZZLE } from './lib/db-connection.token';
+export { DRIZZLE, type Database } from './lib/db-connection.token';

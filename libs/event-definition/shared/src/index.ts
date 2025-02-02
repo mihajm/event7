@@ -1,1 +1,1 @@
-export * from './lib/event-definition-shared';
+export * from './lib/event-definition.type';

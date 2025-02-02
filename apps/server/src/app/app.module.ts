@@ -1,4 +1,5 @@
 import { DatabaseModule } from '@e7/common/db';
+import { EventDefinitionModule } from '@e7/event-definition/server';
 import { Module } from '@nestjs/common';
 import { CONFIG, EnvModule } from './env';
 
@@ -15,8 +16,7 @@ import { CONFIG, EnvModule } from './env';
       }),
       inject: [CONFIG],
     }),
+    EventDefinitionModule,
   ],
-  controllers: [],
-  providers: [],
 })
 export class AppModule {}
