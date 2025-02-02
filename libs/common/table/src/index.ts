@@ -1,1 +1,2 @@
-export * from './lib/table/table.component';
+export * from './lib/column';
+export * from './lib/table.component';

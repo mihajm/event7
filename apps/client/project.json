@@ -20,9 +20,10 @@
           {
             "glob": "**/*",
             "input": "apps/client/public"
-          }
+          },
+          "apps/client/src/config"
         ],
-        "styles": ["apps/client/src/styles.scss"],
+        "styles": ["apps/client/src/theme.scss", "apps/client/src/styles.scss"],
         "scripts": []
       },
       "configurations": {

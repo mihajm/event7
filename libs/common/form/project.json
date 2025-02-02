@@ -2,7 +2,7 @@
   "name": "form",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/common/form/src",
-  "prefix": "lib",
+  "prefix": "app",
   "projectType": "library",
   "tags": [],
   "targets": {

@@ -1,0 +1,19 @@
+{
+  "name": "big-decimal",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/common/big-decimal/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/common/big-decimal",
+        "main": "libs/common/big-decimal/src/index.ts",
+        "tsConfig": "libs/common/big-decimal/tsconfig.lib.json",
+        "assets": ["libs/common/big-decimal/*.md"]
+      }
+    }
+  }
+}

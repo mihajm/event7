@@ -1,1 +1,4 @@
-export * from './lib/locale/locale.component';
+export * from './lib/compile-locale';
+export * from './lib/provide-localized-router';
+export * from './lib/register-locale';
+export { injectSharedT, type SharedTranslator } from './lib/shared';

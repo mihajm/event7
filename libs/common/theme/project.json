@@ -2,7 +2,7 @@
   "name": "theme",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/common/theme/src",
-  "prefix": "lib",
+  "prefix": "app",
   "projectType": "library",
   "tags": [],
   "targets": {

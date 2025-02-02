@@ -3,15 +3,30 @@ import {
   type ApplicationConfig,
   provideExperimentalZonelessChangeDetection,
 } from '@angular/core';
+import { provideDateFnsAdapter } from '@angular/material-date-fns-adapter';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { provideRouter } from '@angular/router';
-import { appRoutes } from './app.routes';
+import { provideLocalizedRouter } from '@e7/common/locale';
+import { provideClientConfig } from '@e7/common/settings';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideClientConfig(),
     provideExperimentalZonelessChangeDetection(),
-    provideRouter(appRoutes),
+    provideLocalizedRouter([
+      {
+        path: 'event-definition',
+        loadChildren: () =>
+          import('@e7/event-definition/client').then(
+            (m) => m.EVENT_DEFINITION_ROUTES,
+          ),
+      },
+      {
+        path: '**',
+        redirectTo: 'event-definition',
+      },
+    ]),
     provideAnimationsAsync(),
     provideHttpClient(withFetch()),
+    provideDateFnsAdapter(),
   ],
 };
