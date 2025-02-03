@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { computed, Signal } from '@angular/core';
+import { computed, Signal, WritableSignal } from '@angular/core';
 import { DerivedSignal } from '@e7/common/reactivity';
 import {
   CreateFormControlOptions,
@@ -7,7 +7,7 @@ import {
   FormControlSignal,
 } from './form-control';
 
-export type FormGroup<
+export type FormGroupSignal<
   T,
   TDerivations extends Record<string, FormControlSignal<any, T>>,
   TParent = undefined,
@@ -26,27 +26,32 @@ export function formGroup<
   TDerivations extends Record<string, FormControlSignal<any, T>>,
   TParent = undefined,
 >(
-  initial: DerivedSignal<TParent, T> | T,
+  initial: DerivedSignal<TParent, T> | T | WritableSignal<T>,
   children: TDerivations,
   opt?: CreateFormControlOptions<T>,
-): FormGroup<T, TDerivations, TParent> {
+): FormGroupSignal<T, TDerivations, TParent> {
   const derivationsArray = values(children);
 
-  const ctrl = formControl<T, TParent>(initial, {
-    ...opt,
-    readonly: () => {
-      if (opt?.readonly?.()) return true;
-      return (
-        !!derivationsArray.length && derivationsArray.every((d) => d.readonly())
-      );
+  const ctrl = formControl<T, TParent>(
+    initial as DerivedSignal<TParent, T> | T,
+    {
+      ...opt,
+      readonly: () => {
+        if (opt?.readonly?.()) return true;
+        return (
+          !!derivationsArray.length &&
+          derivationsArray.every((d) => d.readonly())
+        );
+      },
+      disable: () => {
+        if (opt?.disable?.()) return true;
+        return (
+          !!derivationsArray.length &&
+          derivationsArray.every((d) => d.disabled())
+        );
+      },
     },
-    disable: () => {
-      if (opt?.disable?.()) return true;
-      return (
-        !!derivationsArray.length && derivationsArray.every((d) => d.disabled())
-      );
-    },
-  });
+  ) as FormControlSignal<T, TParent>;
 
   const touched = computed(
     () =>
@@ -78,6 +83,15 @@ export function formGroup<
     derivationsArray.forEach((d) => d.markAllAsPristine());
   };
 
+  const reconcile = (newValue: T) => {
+    ctrl.reconcile(newValue);
+    derivationsArray.forEach((d) => {
+      const from = d.from;
+      if (!from) return;
+      d.reconcile(from(newValue));
+    });
+  };
+
   return {
     ...ctrl,
     children,
@@ -87,5 +101,6 @@ export function formGroup<
     error,
     markAllAsTouched,
     markAllAsPristine,
-  } as FormGroup<T, TDerivations, TParent>;
+    reconcile,
+  };
 }

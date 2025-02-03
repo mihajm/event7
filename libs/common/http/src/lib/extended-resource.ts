@@ -11,19 +11,24 @@ import {
   RxResourceOptions,
   takeUntilDestroyed,
 } from '@angular/core/rxjs-interop';
-import { catchError, interval, of, tap } from 'rxjs';
+import { catchError, fromEvent, interval, of, takeUntil, tap } from 'rxjs';
 
-export type DefinedExtendedResourceOptions<T, R> = RxResourceOptions<T, R> & {
-  onMutate?: (value: NoInfer<R>) => void;
-  onError?: (error: unknown) => void;
-  onSuccess?: (value: NoInfer<Exclude<T, undefined | null>>) => void;
+export type DefinedExtendedResourceOptions<
+  T,
+  R,
+  TCTX = void,
+> = RxResourceOptions<T, R> & {
+  onMutate?: (value: NoInfer<R>) => TCTX;
+  onError?: (error: unknown, ctx: TCTX) => void;
+  onSuccess?: (value: NoInfer<Exclude<T, undefined | null>>, ctx: TCTX) => void;
+  onSettled?: (value: NoInfer<T> | null | undefined, ctx: TCTX) => void;
   fallback: NoInfer<T>;
   keepPrevious?: boolean;
   refresh?: number;
 };
 
-export type UndefinedExtendedResourceOptions<T, R> = Omit<
-  DefinedExtendedResourceOptions<T, R>,
+export type UndefinedExtendedResourceOptions<T, R, TCTX = void> = Omit<
+  DefinedExtendedResourceOptions<T, R, TCTX>,
   'fallback'
 >;
 
@@ -60,33 +65,37 @@ function keepPrevious<T>(
   });
 }
 
-export function extendedResource<T, R>(
-  opt: UndefinedExtendedResourceOptions<T, R>,
+export function extendedResource<T, R, TCTX = void>(
+  opt: UndefinedExtendedResourceOptions<T, R, TCTX>,
 ): UndefinedExtendedResourceRef<T>;
 
-export function extendedResource<T, R>(
-  opt: DefinedExtendedResourceOptions<T, R>,
+export function extendedResource<T, R, TCTX = void>(
+  opt: DefinedExtendedResourceOptions<T, R, TCTX>,
 ): DefinedExtendedResourceRef<T>;
 
-export function extendedResource<T, R>(
+export function extendedResource<T, R, TCTX = void>(
   opt:
-    | DefinedExtendedResourceOptions<T, R>
-    | UndefinedExtendedResourceOptions<T, R>,
+    | DefinedExtendedResourceOptions<T, R, TCTX>
+    | UndefinedExtendedResourceOptions<T, R, TCTX>,
 ): UndefinedExtendedResourceRef<T> | DefinedExtendedResourceRef<T> {
   const fallback =
     (opt as Partial<DefinedExtendedResourceOptions<T, R>>).fallback ?? null;
 
+  let ctx: TCTX = undefined as TCTX;
+
   const loader = (params: ResourceLoaderParams<R>) => {
-    opt.onMutate?.(params.request);
+    ctx = opt.onMutate?.(params.request) as TCTX;
     return opt.loader(params).pipe(
       tap((value) => {
         if (value === undefined || value === null) return;
-        opt.onSuccess?.(value as Exclude<T, undefined | null>);
+        opt.onSuccess?.(value as Exclude<T, undefined | null>, ctx);
       }),
       catchError((err) => {
-        opt.onError?.(err);
+        opt.onError?.(err, ctx);
         return of(fallback as T);
       }),
+      tap((v) => opt.onSettled?.(v, ctx)),
+      takeUntil(fromEvent(params.abortSignal, 'abort')),
     );
   };
 

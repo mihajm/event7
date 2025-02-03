@@ -11,6 +11,21 @@ export default createSharedTranslation('sl-SI', {
   },
   close: 'Zapri',
   confirm: 'Potrdi',
+  clear: 'Počisti',
+  noItemsFound: 'Ni najdenih {items}',
+  results: 'rezultatov',
+  areYouSure: 'Ali ste prepričani?',
+  editItem: 'Uredi {item}',
+  table: {
+    pagination: {
+      firstPage: 'Prva stran',
+      lastPage: 'Zadnja stran',
+      nextPage: 'Naslednja stran',
+      prevPage: 'Prejšnja stran',
+      fromTo: '{range} od {total}',
+      perPage: '{items} na stran',
+    },
+  },
   validation: {
     general: {
       required: 'Polje je obvezno',

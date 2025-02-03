@@ -10,7 +10,23 @@ const ns = createNamespace('eventDef', {
   created: 'Created',
   updated: 'Updated',
   status: 'Status',
-  createEventDefinition: 'Create Event Definition',
+  createEventDefinition: 'Create event definition',
+  archiveEventDefinition: 'Archive event definition',
+  modifyEventDefinition: 'Modify event definition',
+  actions: 'Actions',
+  youWantToArchiveThisEvent: 'Confirming will archive this definition',
+  eventStatus: {
+    active: 'Active',
+    archived: 'Archived',
+    draft: 'Draft',
+    ready: 'Ready',
+  },
+  types: {
+    crosspromo: 'Crosspromo',
+    liveops: 'Liveops',
+    app: 'App',
+    ads: 'Ads',
+  },
 } as const);
 
 export default ns.translation;

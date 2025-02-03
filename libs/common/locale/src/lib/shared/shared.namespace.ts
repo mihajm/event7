@@ -11,6 +11,21 @@ const ns = createNamespace('shared', {
   },
   close: 'Close',
   confirm: 'Confirm',
+  clear: 'Clear',
+  noItemsFound: 'No {items} found',
+  results: 'results',
+  areYouSure: 'Are you sure?',
+  editItem: 'Edit {item}',
+  table: {
+    pagination: {
+      firstPage: 'First page',
+      lastPage: 'Last page',
+      nextPage: 'Next page',
+      prevPage: 'Previous page',
+      fromTo: '{range} of {total}',
+      perPage: '{items} per page',
+    },
+  },
   validation: {
     general: {
       required: 'Field is required',

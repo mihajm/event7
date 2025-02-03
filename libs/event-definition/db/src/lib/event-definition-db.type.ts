@@ -5,4 +5,4 @@ import type * as schema from './event-definition.schema';
 export type EventDefinition = InferSelectModel<typeof schema.eventDefinition>;
 export type EventDefinitionDatabase = NodePgDatabase<typeof schema>;
 
-type InsertDefinition = InferInsertModel<typeof schema.eventDefinition>;
+export type InsertDefinition = InferInsertModel<typeof schema.eventDefinition>;

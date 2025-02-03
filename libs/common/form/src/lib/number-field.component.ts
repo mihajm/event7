@@ -60,21 +60,21 @@ export function createNumberState<TParent = undefined>(
     ...opt,
     validator: () => numberValidator(validation(), t),
     required: () => validation().required === true,
-  });
+  }) as FormControlSignal<number | null, TParent>;
 
   return {
     ...state,
     autocomplete: computed(() => opt?.autocomplete?.() ?? 'off'),
     placeholder: computed(() => opt?.placeholder?.() ?? ''),
     type: 'number',
-  } as NumberState<TParent>;
+  };
 }
 
 export function injectCreateNumberState<TParent = undefined>(
   value: number | null | DerivedSignal<TParent, number | null>,
   opt?: NumberStateOptions,
+  t = injectSharedT(),
 ): NumberState<TParent> {
-  const t = injectSharedT();
   return createNumberState(value, t, opt);
 }
 
@@ -98,8 +98,9 @@ export function injectCreateNumberState<TParent = undefined>(
       [hideRequiredMarker]="hideRequiredMarker()"
       [subscriptSizing]="subscriptSizing()"
     >
-      <mat-label>{{ state().label() }}</mat-label>
-
+      @if (state().label()) {
+        <mat-label>{{ state().label() }}</mat-label>
+      }
       <input
         matInput
         type="number"
@@ -112,15 +113,21 @@ export function injectCreateNumberState<TParent = undefined>(
         [appProvidedError]="state().error()"
         (blur)="state().markAsTouched()"
       />
+
+      <mat-error>{{ state().error() }}</mat-error>
+
+      @if (state().hint()) {
+        <mat-hint>{{ state().hint() }}</mat-hint>
+      }
     </mat-form-field>
   `,
   styles: `
-    .app-string-field {
+    .app-number-field {
       display: contents;
     }
   `,
 })
-export class StringFieldComponent<TParent = undefined> {
+export class NumberFieldComponent<TParent = undefined> {
   readonly state = input.required<NumberState<TParent>>();
   readonly appearance = input<MatFormFieldAppearance>(
     inject(MAT_FORM_FIELD_DEFAULT_OPTIONS, { optional: true })?.appearance ??

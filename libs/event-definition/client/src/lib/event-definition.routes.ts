@@ -1,6 +1,5 @@
 import { Route } from '@angular/router';
 import { EventDefinitionShellComponent } from './event-definition-shell.component';
-import { EventDefinitionService } from './event-definition.service';
 import { resolveNamespaceTranslation } from './locale';
 
 export const EVENT_DEFINITION_ROUTES: Route[] = [
@@ -10,7 +9,6 @@ export const EVENT_DEFINITION_ROUTES: Route[] = [
     resolve: {
       resolveEventDefTranslation: resolveNamespaceTranslation,
     },
-    providers: [EventDefinitionService],
     children: [
       {
         path: 'list',

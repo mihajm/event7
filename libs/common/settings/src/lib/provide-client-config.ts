@@ -1,6 +1,6 @@
 import { inject, InjectionToken, Provider } from '@angular/core';
 
-const KNOWN_APIS = ['eventDefinition'] as const;
+const KNOWN_APIS = ['eventDefinition', 'eventDefinitionType'] as const;
 
 type KnownApi = (typeof KNOWN_APIS)[number];
 

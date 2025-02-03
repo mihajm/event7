@@ -20,7 +20,6 @@ export function provideLocalizedRouter(
         {
           provide: LOCALE_ID,
           useFactory: (route: ActivatedRoute) => {
-            console.log('hre');
             const locale = route.snapshot.paramMap.get('locale');
             return isSupportedLocale(locale) ? locale : DEFAULT_LOCALE;
           },

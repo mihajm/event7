@@ -25,6 +25,7 @@ export type FormControlSignal<T, TParent = undefined> = {
   markAllAsTouched: () => void;
   markAsPristine: () => void;
   markAllAsPristine: () => void;
+  reconcile: (newValue: T) => void;
   from?: DerivedSignal<TParent, T>['from'];
 };
 
@@ -82,5 +83,9 @@ export function formControl<T, TParent = undefined>(
     markAllAsTouched,
     markAsPristine,
     markAllAsPristine,
+    reconcile: (newValue: T) => {
+      initialValue.set(newValue);
+      value.set(newValue);
+    },
   };
 }

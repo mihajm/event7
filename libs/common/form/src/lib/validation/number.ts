@@ -1,6 +1,6 @@
 import { equalsZero, mod, toBigDecimal } from '@e7/common/big';
 import { SharedTranslator } from '@e7/common/locale';
-import { exactValidator, oneOfValidator, requiredValidator } from './shared';
+import { exactValidator, oneOfValidator } from './shared';
 
 export function minValidator(t: SharedTranslator, min: number) {
   const msg = t('shared.validation.number.min', { min });
@@ -60,11 +60,19 @@ export type NumberValidatorOptions = {
   multipleOf?: number;
 };
 
+function requiredNumberValidator(t: SharedTranslator) {
+  const msg = t('shared.validation.general.required');
+  return (value: number | null) => {
+    if (value === null || value === undefined) return msg;
+    return '';
+  };
+}
+
 export function numberValidator(
   opt: NumberValidatorOptions,
   t: SharedTranslator,
 ) {
-  const requiredVal = opt.required ? requiredValidator(t) : () => '';
+  const requiredVal = opt.required ? requiredNumberValidator(t) : () => '';
   const minVal = opt.min !== undefined ? minValidator(t, opt.min) : () => '';
   const maxVal = opt.max !== undefined ? maxValidator(t, opt.max) : () => '';
   const integerVal = opt.integer ? integerValidator(t) : () => '';

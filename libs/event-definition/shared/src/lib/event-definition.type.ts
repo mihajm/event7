@@ -1,17 +1,23 @@
 import { z } from 'zod';
 
+export const EVENT_DEFINITION_TYPES = [
+  'ads',
+  'app',
+  'crosspromo',
+  'liveops',
+] as const;
+
+export const NO_PERMISSION_EVENT_TYPES = EVENT_DEFINITION_TYPES.filter(
+  (type) => type !== 'ads',
+);
+
 const eventDefinitionStatusSchema = z.enum([
   'draft',
   'ready',
   'active',
   'archived',
 ]);
-const eventDefinitionTypeSchema = z.enum([
-  'crosspromo',
-  'liveops',
-  'app',
-  'ads',
-]);
+const eventDefinitionTypeSchema = z.enum(EVENT_DEFINITION_TYPES);
 
 const baseCreateSchema = {
   id: z.string(),
@@ -22,7 +28,10 @@ const baseCreateSchema = {
   status: eventDefinitionStatusSchema.optional(),
 } as const;
 
-const createEventDefinitionSchema = z.object(baseCreateSchema);
+export const createEventDefinitionSchema = z.object({
+  ...baseCreateSchema,
+  id: baseCreateSchema.id.optional(),
+});
 
 export const getSchema = {
   ...baseCreateSchema,
@@ -36,8 +45,14 @@ export const getSchema = {
 export const eventDefinitionSchema = z.object(getSchema);
 
 export const updateEventDefinitionSchema = z.object({
-  ...getSchema,
-  id: getSchema.id.optional(),
+  id: baseCreateSchema.id.optional(),
+  name: getSchema.name.nullable(),
+  description: getSchema.description.nullable(),
+  type: getSchema.type.nullable(),
+  priority: getSchema.priority,
+  status: getSchema.status,
+  createdAt: getSchema.createdAt,
+  updatedAt: getSchema.updatedAt,
 });
 
 export type EventDefinitionType = z.infer<typeof eventDefinitionTypeSchema>;

@@ -16,5 +16,10 @@ import { ThemeDirective } from '@e7/common/theme';
       <router-outlet />
     </app-layout>
   `,
+  styles: `
+    :host {
+      display: contents;
+    }
+  `,
 })
 export class AppComponent {}
