@@ -1,3 +1,4 @@
+import { registerLocaleData } from '@angular/common';
 import { inject, InjectionToken, Provider } from '@angular/core';
 import {
   ActivatedRoute,
@@ -27,6 +28,27 @@ export async function resolveDateFnsLocale(
   const fn = DATE_FNS_LOCALES[supportedLocale];
 
   return fn ? fn() : undefined;
+}
+
+const LOCALE_DATA: Record<
+  SupportedLocale,
+  undefined | (() => Promise<unknown>)
+> = {
+  'en-US': undefined,
+  'sl-SI': () => import('@angular/common/locales/sl').then((m) => m.default),
+};
+
+export async function resolverLocaleRegistration(
+  route: ActivatedRouteSnapshot,
+) {
+  const activatedLocale = route.paramMap.get('locale');
+  const supportedLocale = isSupportedLocale(activatedLocale)
+    ? activatedLocale
+    : DEFAULT_LOCALE;
+
+  const fn = LOCALE_DATA[supportedLocale];
+
+  if (fn) registerLocaleData(await fn(), supportedLocale);
 }
 
 const resolverKey = 'DATE_FN_LOCALE';

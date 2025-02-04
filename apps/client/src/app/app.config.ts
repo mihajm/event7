@@ -1,10 +1,8 @@
-import { registerLocaleData } from '@angular/common';
 import {
   provideHttpClient,
   withFetch,
   withInterceptors,
 } from '@angular/common/http';
-import localeSl from '@angular/common/locales/sl';
 import {
   type ApplicationConfig,
   provideExperimentalZonelessChangeDetection,
@@ -14,8 +12,6 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { dedupeRequestsInterceptor } from '@e7/common/http';
 import { provideLocalizedRouter } from '@e7/common/locale';
 import { provideClientConfig } from '@e7/common/settings';
-
-registerLocaleData(localeSl);
 
 export const appConfig: ApplicationConfig = {
   providers: [
