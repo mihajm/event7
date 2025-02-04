@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
+import { EmptyObject } from '@e7/common/object';
+
 export const DEFAULT_LOCALE = 'en-US' as const;
 
 export type DefaultLocale = typeof DEFAULT_LOCALE;
@@ -40,8 +42,6 @@ export type StringPathPair<T> = T extends string
 type mergeObject<T> = T extends infer U ? { [K in keyof U]: U[K] } : never;
 
 type StringLike = string | number | boolean;
-
-type EmptyObject = Record<PropertyKey, never>;
 
 type extractAllVariables<T extends string> =
   T extends `${string}{${infer VariableName}}${string}`
