@@ -1,5 +1,5 @@
+import { Cache } from '@e7/common/cache';
 import { Injectable } from '@nestjs/common';
-import { Cache } from './cache';
 
 type AdPartnerResponse = {
   ads: 'sure, why not!' | 'you shall not pass!';
