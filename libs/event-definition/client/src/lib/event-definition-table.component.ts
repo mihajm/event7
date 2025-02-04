@@ -7,6 +7,7 @@ import {
   LOCALE_ID,
   untracked,
 } from '@angular/core';
+import { injectDateFnsLocale } from '@e7/common/locale';
 import {
   CellDirective,
   createColumnHelper,
@@ -16,7 +17,6 @@ import {
 } from '@e7/common/table';
 import { EventDefinition } from '@e7/event-definition/shared';
 import { endOfYesterday, formatDistanceToNow, isBefore } from 'date-fns';
-import { sl } from 'date-fns/locale';
 import { ArchiveEventTriggerComponent } from './archive-event-definition-dialog.component';
 import { EditEventTriggerComponent } from './edit-event-definition-dialog.component';
 import { EventDefinitionStore } from './event-definition.store';
@@ -28,7 +28,7 @@ const yesterday = endOfYesterday();
 
 function injectDisplayDate() {
   const locale = inject(LOCALE_ID);
-  const dateFnsLocale = locale === 'sl-SI' ? sl : undefined;
+  const dateFnsLocale = injectDateFnsLocale();
 
   return (val?: string | Date) => {
     if (!val) return '';
