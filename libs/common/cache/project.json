@@ -1,0 +1,20 @@
+{
+  "name": "cache",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/common/cache/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/common/cache",
+        "tsConfig": "libs/common/cache/tsconfig.lib.json",
+        "packageJson": "libs/common/cache/package.json",
+        "main": "libs/common/cache/src/index.ts",
+        "assets": ["libs/common/cache/*.md"]
+      }
+    }
+  }
+}
