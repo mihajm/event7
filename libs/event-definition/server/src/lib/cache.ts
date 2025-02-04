@@ -79,7 +79,7 @@ export class Cache<T> {
       created: entry?.created ?? Date.now(),
       useCount: prevCount + 1,
       stale: Date.now() + this.staleTime,
-      timeout: setTimeout(() => this.internal.delete(key), this.ttl),
+      timeout: setTimeout(() => this.invalidate(key), this.ttl),
     });
 
     this.cleanup();
@@ -98,12 +98,21 @@ export class Cache<T> {
 
     const sorted = Array.from(this.internal.entries()).toSorted((a, b) => {
       if (this.cleanupOpt.type === 'lru') {
-        return b[1].useCount - a[1].useCount;
+        return a[1].useCount - b[1].useCount; // least used first
       } else {
-        return b[1].created - a[1].created;
+        return a[1].created - b[1].created; // oldest first
       }
     });
 
-    this.internal = new Map(sorted.slice(0, this.cleanupOpt.maxSize / 2));
+    const keepCount = Math.floor(this.cleanupOpt.maxSize / 2);
+
+    const keep = sorted.slice(keepCount);
+    const removed = sorted.slice(0, -keepCount);
+
+    removed.forEach(([, e]) => {
+      clearTimeout(e.timeout);
+    });
+
+    this.internal = new Map(keep);
   }
 }
