@@ -17,6 +17,12 @@ export function provideConfig(): Provider {
           MIGRATING: cfg.get('DB_MIGRATING'),
           SEEDING: cfg.get('DB_SEEDING'),
         },
+        IP_API_URL: cfg.get('IP_API_URL'),
+        AD_PERMISSION: {
+          URL: cfg.get('AD_PERMISSION_URL'),
+          USERNAME: cfg.get('AD_PERMISSION_USERNAME'),
+          PASSWORD: cfg.get('AD_PERMISSION_PASSWORD'),
+        },
       });
     },
     inject: [ConfigService],

@@ -8,9 +8,17 @@ const dbSchema = z.object({
   SEEDING: z.boolean().default(false),
 });
 
+const adPermissionSchema = z.object({
+  URL: z.string().url().optional(),
+  USERNAME: z.string().optional(),
+  PASSWORD: z.string().optional(),
+});
+
 export const envSchema = z.object({
   PORT: z.string().default('3000'),
   DB: dbSchema,
+  AD_PERMISSION: adPermissionSchema,
+  IP_API_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

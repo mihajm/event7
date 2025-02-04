@@ -16,7 +16,15 @@ import { CONFIG, EnvModule } from './env';
       }),
       inject: [CONFIG],
     }),
-    EventDefinitionModule,
+    EventDefinitionModule.forRootAsync({
+      resolveOptions: (cfg) => ({
+        ipApiUrl: cfg.IP_API_URL,
+        url: cfg.AD_PERMISSION.URL,
+        username: cfg.AD_PERMISSION.USERNAME,
+        password: cfg.AD_PERMISSION.PASSWORD,
+      }),
+      inject: [CONFIG],
+    }),
   ],
 })
 export class AppModule {}

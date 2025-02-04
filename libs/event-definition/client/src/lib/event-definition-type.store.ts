@@ -18,7 +18,9 @@ export class EventDefinitionTypeService {
   list(): Observable<Required<EventDefinition>['type'][]> {
     if (!this.url) return of(NO_PERMISSION_EVENT_TYPES);
 
-    return this.http.get<Required<EventDefinition>['type'][]>(this.url);
+    return this.http.get<Required<EventDefinition>['type'][]>(
+      `${this.url}/event-definition-type`,
+    );
   }
 }
 

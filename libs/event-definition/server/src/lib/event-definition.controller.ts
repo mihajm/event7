@@ -12,9 +12,13 @@ import {
   Patch,
   Post,
   Query,
+  Request,
   Response,
 } from '@nestjs/common';
-import { Response as Res } from 'express';
+import {
+  Request as ExpressRequest,
+  Response as ExpressResponse,
+} from 'express';
 import { EventDefinitionService } from './event-definition.service';
 
 function contentRange(total: number, offset: number, limit: number) {
@@ -27,6 +31,22 @@ function contentRange(total: number, offset: number, limit: number) {
   return `items ${offset}-${end}/${total}`;
 }
 
+// function getClientIp(req: ExpressRequest): string {
+//   const forwardedFor = req.headers['x-forwarded-for']
+//     ?.toString()
+//     .split(',')
+//     .at(0)
+//     ?.trim();
+
+//   const realIp = req.headers['x-real-ip']?.toString().trim();
+
+//   const ip = forwardedFor || realIp || req.connection.remoteAddress;
+
+//   if (ip === '::1' || ip === '::ffff:127.0.0.1') return '127.0.0.1';
+
+//   return ip ?? '0.0.0.0';
+// }
+
 @Controller('event-definition')
 export class EventDefinitionController {
   constructor(private readonly svc: EventDefinitionService) {}
@@ -34,7 +54,8 @@ export class EventDefinitionController {
   @Get()
   async list(
     @Ip() ip: string,
-    @Response() res: Res,
+    @Response() res: ExpressResponse,
+    @Request() req: ExpressRequest,
     @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('sort') sort?: string | string[],

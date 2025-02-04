@@ -62,7 +62,7 @@ export class EventDefinitionService {
   ): Observable<{ events: EventDefinition[]; total: number }> {
     if (!this.url) throw new Error('Event definition api disabled');
     return this.http
-      .get<EventDefinition[]>(this.url, {
+      .get<EventDefinition[]>(`${this.url}/event-definition`, {
         params: removeEmptyKeys(toListParams(opt)),
         observe: 'response',
       })
@@ -85,12 +85,15 @@ export class EventDefinitionService {
 
   get(id: string): Observable<EventDefinition> {
     if (!this.url) throw new Error('Event definition api disabled');
-    return this.http.get<EventDefinition>(`${this.url}/${id}`);
+    return this.http.get<EventDefinition>(`${this.url}/event-definition/${id}`);
   }
 
   create(body: CreateEventDefinitionDTO): Observable<EventDefinition> {
     if (!this.url) throw new Error('Event definition api disabled');
-    return this.http.post<EventDefinition>(this.url, body);
+    return this.http.post<EventDefinition>(
+      `${this.url}/event-definition`,
+      body,
+    );
   }
 
   patch(
@@ -98,7 +101,10 @@ export class EventDefinitionService {
     body: UpdateEventDefinitionDTO,
   ): Observable<EventDefinition> {
     if (!this.url) throw new Error('Event definition api disabled');
-    return this.http.patch<EventDefinition>(`${this.url}/${id}`, body);
+    return this.http.patch<EventDefinition>(
+      `${this.url}/event-definition/${id}`,
+      body,
+    );
   }
 }
 
