@@ -1,4 +1,4 @@
-import { BehaviorSubject, map, skip } from 'rxjs';
+import { BehaviorSubject, map, skip, Subject, takeUntil } from 'rxjs';
 import { v7 } from 'uuid';
 
 type CacheEntry<T> = {
@@ -31,6 +31,7 @@ export class Cache<T> {
   private readonly internal$ = new BehaviorSubject(
     new Map<string, CacheEntry<T>>(),
   );
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
     private readonly ttl: number = ONE_DAY,
@@ -53,20 +54,27 @@ export class Cache<T> {
     const registry = new FinalizationRegistry((id: string) => {
       if (id === destroyId) {
         clearInterval(cleanupInterval);
-        this.internal$.complete();
+        this.destroy$.next();
       }
     });
 
     registry.register(this, destroyId);
   }
 
-  private getCacheEntrie(key: string) {
-    return this.internal$.value.get(key);
+  getEntry(key: string) {
+    const found = this.internal$.value.get(key);
+    if (!found) return null;
+    if (found.expiresAt <= Date.now()) {
+      clearTimeout(found.timeout);
+      this.internal$.value.delete(key);
+      return null;
+    }
+    return found;
   }
 
   private getEntryAndStale(key: string) {
-    const found = this.getCacheEntrie(key);
-    if (!found || found.expiresAt <= Date.now()) return null;
+    const found = this.getEntry(key);
+    if (!found) return null;
 
     return {
       entry: found,
@@ -83,7 +91,11 @@ export class Cache<T> {
   }
 
   store(key: string, value: T) {
-    const entry = this.getCacheEntrie(key);
+    this.storeWithInvalidation(key, value, this.staleTime, this.ttl);
+  }
+
+  storeWithInvalidation(key: string, value: T, staleTime: number, ttl: number) {
+    const entry = this.getEntry(key);
     if (entry) {
       clearTimeout(entry.timeout);
     }
@@ -94,9 +106,9 @@ export class Cache<T> {
       value,
       created: entry?.created ?? Date.now(),
       useCount: prevCount + 1,
-      stale: Date.now() + this.staleTime,
+      stale: Date.now() + staleTime,
       expiresAt: Date.now() + this.ttl,
-      timeout: setTimeout(() => this.invalidate(key), this.ttl),
+      timeout: setTimeout(() => this.invalidate(key), ttl),
     });
 
     this.internal$.next(this.internal$.value);
@@ -105,7 +117,7 @@ export class Cache<T> {
   }
 
   invalidate(key: string) {
-    const entry = this.getCacheEntrie(key);
+    const entry = this.getEntry(key);
     if (entry) {
       clearTimeout(entry.timeout);
       this.internal$.value.delete(key);
@@ -124,6 +136,7 @@ export class Cache<T> {
           isStale: found.isStale,
         };
       }),
+      takeUntil(this.destroy$),
     );
   }
 

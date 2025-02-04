@@ -23,7 +23,7 @@ export type InferedRequestLoaderParams<T> = Omit<
 
 type UndefinedMutationResourceOptions<T, R, TCTX = void> = Omit<
   UndefinedExtendedResourceOptions<T, R | null, TCTX>,
-  'loader' | 'request'
+  'loader' | 'request' | 'cache'
 > & {
   next?: WritableSignal<NonNullable<NoInfer<R> | null>>;
   loader: (params: InferedRequestLoaderParams<R>) => Observable<T>;
@@ -31,17 +31,23 @@ type UndefinedMutationResourceOptions<T, R, TCTX = void> = Omit<
 
 type DefinedMutationResourceOptions<T, R, TCTX = void> = Omit<
   DefinedExtendedResourceOptions<T, R | null, TCTX>,
-  'loader' | 'request'
+  'loader' | 'request' | 'cache'
 > & {
   next?: WritableSignal<NonNullable<NoInfer<R> | null>>;
   loader: (params: InferedRequestLoaderParams<R>) => Observable<T>;
 };
 
-type UndefinedMutationResourceRef<T, R> = UndefinedExtendedResourceRef<T> & {
+type UndefinedMutationResourceRef<T, R> = Omit<
+  UndefinedExtendedResourceRef<T, R>,
+  'prefetch'
+> & {
   next: (request: R) => void;
 };
 
-type DefinedMutationResourceRef<T, R> = DefinedExtendedResourceRef<T> & {
+type DefinedMutationResourceRef<T, R> = Omit<
+  DefinedExtendedResourceRef<T, R>,
+  'prefetch'
+> & {
   next: (request: R) => void;
 };
 
