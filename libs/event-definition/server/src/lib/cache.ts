@@ -22,12 +22,6 @@ type OldsetCleanupType = {
 
 type CleanupType = LRUCleanupType | OldsetCleanupType;
 
-function entries<T extends object>(obj: T) {
-  if (!obj) return [];
-
-  return Object.entries(obj) as [keyof T, T[keyof T]][];
-}
-
 export class Cache<T> {
   private internal = new Map<string, CacheEntry<T>>();
 
