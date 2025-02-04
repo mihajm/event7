@@ -25,3 +25,30 @@ export function isPlainObject(value: unknown): value is UnknownObject {
     typeof value === 'object' && value !== null && value.constructor === Object
   );
 }
+
+const assertExists = <T>(value: T | null | undefined): value is T =>
+  value !== null && value !== undefined;
+
+const isEmptyArray = (o: Array<unknown>) => {
+  return o.length > 0;
+};
+
+const isEmptyObject = (o: object | null) => {
+  return Array.isArray(o) ? isEmptyArray(o) : !!o && Object.keys(o).length > 0;
+};
+
+export const removeEmptyKeys = <T extends object>(
+  o: T,
+): Partial<NonNullable<T>> => {
+  const result: Partial<NonNullable<T>> = {};
+  for (const k of keys(o)) {
+    const val = o[k];
+    if (
+      (typeof val === 'object' && isEmptyObject(val)) ||
+      (typeof val !== 'object' && assertExists(val))
+    ) {
+      result[k] = o[k] as NonNullable<T>[keyof T];
+    }
+  }
+  return result;
+};

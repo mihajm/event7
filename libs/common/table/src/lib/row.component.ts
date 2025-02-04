@@ -8,7 +8,8 @@ import {
 import { v7 } from 'uuid';
 import { CellState, createCell } from './cell.component';
 import { ColumnDef } from './column';
-import { createHeaderCell } from './header-cell.component';
+import { createHeaderCell, HeaderCellState } from './header-cell.component';
+import { SortState } from './sort';
 
 export type RowState<T> = {
   id: string;
@@ -18,7 +19,7 @@ export type RowState<T> = {
 
 export type HeaderRowState = {
   id: string;
-  columns: Signal<Omit<CellState<unknown, string>, 'source'>[]>;
+  columns: Signal<HeaderCellState[]>;
 };
 
 export function createRowState<T>(
@@ -36,11 +37,12 @@ export function createRowState<T>(
 
 export function createHeaderRowState<T>(
   defs: ColumnDef<T, any>[],
+  sort: SortState,
 ): HeaderRowState {
   return {
     id: v7(),
     columns: computed(() =>
-      defs.map((def) => createHeaderCell(def.header, def.shared)),
+      defs.map((def) => createHeaderCell(def.header, def.shared, sort)),
     ),
   };
 }

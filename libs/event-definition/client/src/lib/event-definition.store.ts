@@ -5,6 +5,7 @@ import {
   InferedRequestLoaderParams,
   queuedMutationResource,
 } from '@e7/common/http';
+import { removeEmptyKeys } from '@e7/common/object';
 import { stored } from '@e7/common/reactivity';
 import { injectApiUrl } from '@e7/common/settings';
 import { TableValue } from '@e7/common/table';
@@ -25,9 +26,16 @@ function toPaginationParams(opt: TableValue['pagination']) {
   };
 }
 
+function toSortParam(opt?: TableValue['sort']): string | undefined {
+  if (!opt) return undefined;
+
+  return opt.direction === 'desc' ? `-${opt.id}` : opt.id;
+}
+
 function toListParams(opt?: TableValue) {
   return {
     ...toPaginationParams(opt?.pagination),
+    sort: toSortParam(opt?.sort),
   };
 }
 
@@ -55,7 +63,7 @@ export class EventDefinitionService {
     if (!this.url) throw new Error('Event definition api disabled');
     return this.http
       .get<EventDefinition[]>(this.url, {
-        params: toListParams(opt),
+        params: removeEmptyKeys(toListParams(opt)),
         observe: 'response',
       })
       .pipe(
@@ -136,10 +144,7 @@ export class EventDefinitionStore {
 
   readonly definitions = extendedResource({
     request: () => this.listState(),
-    loader: ({ request }) =>
-      this.svc.list({
-        ...request,
-      }),
+    loader: ({ request }) => this.svc.list(request),
     keepPrevious: true,
     fallback: {
       events: [],

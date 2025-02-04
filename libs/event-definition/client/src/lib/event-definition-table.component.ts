@@ -125,8 +125,18 @@ function createState() {
       columns,
       pagination: {
         onPaginationChange: (next) =>
-          store.listState.update((prev) => ({ ...prev, pagination: next })),
+          store.listState.update((prev) => ({
+            ...prev,
+            pagination: next,
+          })),
         total,
+      },
+      sort: {
+        onSortChange: (next) =>
+          store.listState.update((prev) => ({
+            ...prev,
+            sort: next,
+          })),
       },
     },
     items,

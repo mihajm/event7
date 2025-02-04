@@ -18,6 +18,7 @@ import {
   HeaderRowState,
   RowState,
 } from './row.component';
+import { createSortState, SortOptions, SortState, SortValue } from './sort';
 import { TableBodyComponent } from './table-body.component';
 import { TableHeadComponent } from './table-head.component';
 import {
@@ -42,6 +43,7 @@ function toCellMap<
 }
 
 export type TableValue = {
+  sort?: SortValue;
   pagination?: PaginationValue;
 };
 
@@ -49,6 +51,7 @@ export type TableOptions<T> = {
   columns: ColumnDef<T, any>[];
   initial?: TableValue;
   pagination?: PaginationOptions;
+  sort?: SortOptions;
 };
 
 export type TableState<T> = {
@@ -58,6 +61,7 @@ export type TableState<T> = {
   body: {
     rows: Signal<RowState<T>[]>;
   };
+  sort: SortState;
   pagination: PaginationState;
 };
 
@@ -72,6 +76,8 @@ export function injectCreateTableState() {
     const ds = computed(() => source());
     const length = computed(() => ds()?.length ?? 0);
 
+    const sort = createSortState(initial?.sort, options.sort);
+
     const rows = computed(() =>
       Array.from({ length: length() }).map((_, i) => {
         const state = computed(() => ds()?.[i]);
@@ -81,11 +87,12 @@ export function injectCreateTableState() {
 
     return {
       header: {
-        row: createHeaderRowState(options.columns),
+        row: createHeaderRowState(options.columns, sort),
       },
       body: {
         rows,
       },
+      sort,
       pagination: paginationFactory(
         initial?.pagination,
         length,

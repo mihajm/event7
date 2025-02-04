@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
   input,
   Signal,
   untracked,
@@ -84,11 +83,14 @@ export function injectCreatePaginationState() {
       size: createSelectState(
         derived(value, {
           from: (v) => v.size,
-          onChange: (v) =>
+          onChange: (v) => {
             value.mutate((cur) => {
               cur.size = v;
               return cur;
-            }),
+            });
+
+            opt?.onPaginationChange?.(untracked(value));
+          },
         }),
         t,
         {
@@ -100,11 +102,13 @@ export function injectCreatePaginationState() {
       page: createNumberState(
         derived(value, {
           from: (v) => v.page,
-          onChange: (v) =>
+          onChange: (v) => {
             value.mutate((cur) => {
               cur.page = v;
               return cur;
-            }),
+            });
+            opt?.onPaginationChange?.(untracked(value));
+          },
         }),
         t,
       ),
@@ -142,11 +146,6 @@ export function injectCreatePaginationState() {
       if (pageSize === 0) return 0;
       return Math.ceil(cur / pageSize) - 1;
     });
-
-    const onChange = opt?.onPaginationChange;
-    if (onChange) {
-      effect(() => onChange(state.value()));
-    }
 
     return {
       ...state,

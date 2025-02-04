@@ -13,9 +13,11 @@ export type ColumnDef<T, U> = {
 type ColumnOptions = {
   label?: () => string;
   align?: () => 'left' | 'right';
+  disableSort?: () => boolean;
 };
 
 export type SharedColumnState = {
+  disableSort: Signal<boolean>;
   align: Signal<'left' | 'right'>;
   name: string;
 };
@@ -36,6 +38,7 @@ export function createColumnHelper<T>() {
       },
       type: 'accessor',
       shared: {
+        disableSort: computed(() => opt?.disableSort?.() ?? false),
         align: computed(opt.align ?? (() => 'left')),
         name,
       },
@@ -53,6 +56,7 @@ export function createColumnHelper<T>() {
       },
       type: 'display',
       shared: {
+        disableSort: computed(() => opt?.disableSort?.() ?? false),
         align: computed(opt.align ?? (() => 'left')),
         name,
       },
