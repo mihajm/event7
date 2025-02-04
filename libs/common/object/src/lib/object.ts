@@ -19,3 +19,9 @@ export function values<T extends object>(obj: T) {
 export type EmptyObject = Record<PropertyKey, never>;
 
 export type UnknownObject = Record<PropertyKey, unknown>;
+
+export function isPlainObject(value: unknown): value is UnknownObject {
+  return (
+    typeof value === 'object' && value !== null && value.constructor === Object
+  );
+}

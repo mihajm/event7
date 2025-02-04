@@ -112,7 +112,7 @@ export function queuedMutationResource<T, R, TCTX = void>(
     from: (q) => q.at(0) ?? null,
     onChange: (r) => {
       if (!r) return;
-      queue.update((q) => {
+      queue.mutate((q) => {
         q.push(r);
         return q;
       });

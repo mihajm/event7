@@ -20,6 +20,10 @@ export class ResourceCache {
     return this.getCache<T>().storeWithInvalidation(key, value, staleTime, ttl);
   }
 
+  invalidate(key: string) {
+    return this.internal.invalidate(key);
+  }
+
   changes$<T>(key: string) {
     return this.getCache<T>().changes$(key);
   }

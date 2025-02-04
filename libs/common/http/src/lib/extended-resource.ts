@@ -1,8 +1,6 @@
 import {
   computed,
   DestroyRef,
-  effect,
-  EffectRef,
   inject,
   ResourceLoaderParams,
   ResourceRef,
@@ -15,6 +13,7 @@ import {
   RxResourceOptions,
   takeUntilDestroyed,
 } from '@angular/core/rxjs-interop';
+import { hash } from '@e7/common/cache';
 import {
   catchError,
   firstValueFrom,
@@ -40,8 +39,7 @@ export type DefinedExtendedResourceOptions<
   refresh?: number;
   cache?: {
     prefix?: string;
-    toString?: (request: Exclude<NoInfer<R>, undefined>) => string;
-    noSync?: boolean;
+    hash?: (request: Exclude<NoInfer<R>, undefined>) => string;
     staleTime?: number;
     ttl?: number;
   };
@@ -54,25 +52,26 @@ export type UndefinedExtendedResourceOptions<T, R, TCTX = void> = Omit<
 
 export type UndefinedExtendedResourceRef<T, R> = Omit<
   ResourceRef<T>,
-  'value' | 'set' | 'update'
+  'value' | 'set' | 'update' | 'reload'
 > & {
   value: Signal<T | null>;
   set: (value: T | null | undefined) => void;
   prefetch: (request: NoInfer<R>) => Promise<void>;
+  reload: (invalidate?: boolean) => void;
 };
 
 export type DefinedExtendedResourceRef<T, R> = Omit<
   ResourceRef<T>,
-  'value' | 'set' | 'update'
+  'value' | 'set' | 'update' | 'reload'
 > & {
   value: Signal<T>;
   set: (value: T | null | undefined) => void;
   prefetch: (request: NoInfer<R>) => Promise<void>;
+  reload: (invalidate?: boolean) => void;
 };
 
 function keepPrevious<T>(
   value: Signal<T | undefined>,
-  loading: Signal<boolean>,
   keep = false,
 ): Signal<T | undefined> {
   if (!keep) return value;
@@ -82,16 +81,20 @@ function keepPrevious<T>(
   return computed(() => {
     const val = value();
     if (val !== undefined) prev = val;
-    if (loading() && !val) return prev;
+    if (!val) return prev;
     return val;
   });
 }
 
 type ResourceCacheRef<T, R> = {
   get: (key: string) => { value: T; isStale: boolean } | null;
-  store: (key: string, value: T, staleTime: number, ttl: number) => void;
+  store: (key: string, value: T) => void;
+  invalidate: (key: string) => void;
   toString: (request: R) => string;
 };
+
+const isDefined = <R>(value: R): value is Exclude<R, undefined> =>
+  value !== undefined;
 
 function injectCache<T, R>(
   opt: UndefinedExtendedResourceOptions<T, R>['cache'],
@@ -102,6 +105,9 @@ function injectCache<T, R>(
       store: () => {
         // noop
       },
+      invalidate: () => {
+        // noop
+      },
       toString: () => {
         return '';
       },
@@ -110,22 +116,33 @@ function injectCache<T, R>(
 
   const cache = inject(ResourceCache);
 
-  const toString = opt.toString ?? JSON.stringify;
+  const hashRequest = (request: Exclude<R, undefined>): string => {
+    if (opt.hash) return opt.hash(request);
+    return hash(request);
+  };
+
+  const ttl = opt?.ttl ?? FIVE_MINUTES;
+  const staleTime = opt?.staleTime ?? 0;
 
   return {
     get: (key: string) => {
       if (!key) return null;
       return cache.get<T>(key);
     },
-    store: (key: string, value: T, staleTime: number, ttl: number) => {
+    store: (key: string, value: T) => {
       if (!key || !value) return;
       cache.store<T>(key, value, staleTime, ttl);
     },
     toString: (request: R) => {
-      if (request === undefined) return opt.prefix ? opt.prefix : '';
+      if (!isDefined(request)) return opt.prefix ? opt.prefix : '';
+
       return opt.prefix
-        ? `${opt.prefix}:${toString(request)}`
-        : toString(request);
+        ? `${opt.prefix}:${hashRequest(request)}`
+        : hashRequest(request);
+    },
+    invalidate: (key: string) => {
+      if (!key) return;
+      cache.invalidate(key);
     },
   };
 }
@@ -152,9 +169,6 @@ export function extendedResource<T, R, TCTX = void>(
 
   const cache = injectCache<T, R>(opt.cache);
 
-  const ttl = opt.cache?.ttl ?? FIVE_MINUTES;
-  const staleTime = opt.cache?.staleTime ?? 0;
-
   const onSuccess = (
     value: Exclude<T, undefined | null>,
     ctx: TCTX,
@@ -165,33 +179,37 @@ export function extendedResource<T, R, TCTX = void>(
     if (!isPrefetch) opt.onSuccess?.(value, ctx);
 
     if (!isCached && params.previous.status !== ResourceStatus.Local)
-      cache.store(params.request.key, value, staleTime, ttl);
+      cache.store(params.request.key, value);
   };
 
   const request = computed(() => opt.request?.() as R);
 
   const key = computed(() => cache.toString(request()));
 
-  let lastReloadTimeout: null | ReturnType<typeof setTimeout> = null;
   const loader = (
     params: ResourceLoaderParams<{ key: string; source: R }>,
     isPrefetch = false,
   ) => {
     ctx = opt.onMutate?.(params.request.source) as TCTX;
 
-    const found =
-      params.previous.status === ResourceStatus.Reloading
-        ? null
-        : cache.get(params.request.key);
+    const found = cache.get(params.request.key);
 
-    const isStale = found?.isStale ?? false;
+    if (
+      found &&
+      found.isStale &&
+      params.previous.status !== ResourceStatus.Local
+    ) {
+      res.set(found.value);
+    }
 
-    const loader$ = found
-      ? of(found.value)
-      : opt.loader({
-          ...params,
-          request: params.request.source as ResourceLoaderParams<R>['request'],
-        });
+    const loader$ =
+      found && !found.isStale
+        ? of(found.value)
+        : opt.loader({
+            ...params,
+            request: params.request
+              .source as ResourceLoaderParams<R>['request'],
+          });
 
     return loader$.pipe(
       tap((value) => {
@@ -211,14 +229,6 @@ export function extendedResource<T, R, TCTX = void>(
       tap((v) => {
         if (!isPrefetch) opt.onSettled?.(v, ctx);
       }),
-      tap(() => {
-        if (lastReloadTimeout) clearTimeout(lastReloadTimeout);
-        if (isStale) {
-          lastReloadTimeout = setTimeout(() => {
-            reload();
-          });
-        }
-      }),
       takeUntil(fromEvent(params.abortSignal, 'abort')),
     );
   };
@@ -234,22 +244,10 @@ export function extendedResource<T, R, TCTX = void>(
     loader,
   });
 
-  let syncEffectRef: null | EffectRef = null;
-
-  if (opt.cache && !opt.cache.noSync) {
-    syncEffectRef = effect(() => {
-      const k = key();
-      if (!k || res.isLoading()) return;
-      const found = cache.get(k);
-      if (!found || found === untracked(res.value) || found.isStale) return;
-      res.set(found.value);
-    });
-  }
-
   const destroyRef = inject(DestroyRef);
   const destroyResource = res.destroy;
 
-  const keep = keepPrevious(res.value, res.isLoading, opt.keepPrevious);
+  const keep = keepPrevious(res.value, opt.keepPrevious);
 
   const value: Signal<T> = computed(
     () => {
@@ -274,7 +272,8 @@ export function extendedResource<T, R, TCTX = void>(
           .pipe(takeUntilDestroyed(destroyRef))
           .subscribe(() => res.reload());
 
-  const reload = () => {
+  const reload = (invalidate = false) => {
+    if (invalidate) cache.invalidate(untracked(key));
     const hasReloaded = res.reload();
     if (!hasReloaded) return false;
 
@@ -295,15 +294,17 @@ export function extendedResource<T, R, TCTX = void>(
     value,
     destroy: () => {
       sub?.unsubscribe();
-      syncEffectRef?.destroy();
       destroyResource();
     },
     reload,
     set: (value: T | null | undefined) => res.set(value ?? undefined),
     prefetch: async (request: NoInfer<R>) => {
-      if (request === undefined) return;
+      if (request === undefined || !opt.cache) return;
 
       const key = cache.toString(request);
+
+      if (cache.get(key)) return;
+
       const req = {
         source: request,
         key,
@@ -314,7 +315,7 @@ export function extendedResource<T, R, TCTX = void>(
           {
             request: req,
             previous: {
-              status: ResourceStatus.Idle,
+              status: untracked(res.status),
             },
             abortSignal: new AbortController().signal,
           },
@@ -323,7 +324,7 @@ export function extendedResource<T, R, TCTX = void>(
       );
 
       if (found === undefined || found === null) return;
-      cache.store(key, found, staleTime, ttl);
+      cache.store(key, found);
     },
   } as DefinedExtendedResourceRef<T, R>;
 }

@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable, untracked } from '@angular/core';
+import { effect, inject, Injectable, untracked } from '@angular/core';
 import {
   extendedResource,
   InferedRequestLoaderParams,
@@ -145,7 +145,42 @@ export class EventDefinitionStore {
       events: [],
       total: 0,
     },
+    cache: {
+      prefix: 'event-definition',
+      ttl: 1000 * 60 * 60, // 1 hour
+    },
   });
+
+  constructor() {
+    effect(() => {
+      if (this.definitions.isLoading()) return;
+      const state = this.listState();
+      const { total } = this.definitions.value();
+      const page = state.pagination?.page ?? 0;
+      const size = state.pagination?.size ?? 10;
+
+      if (page > 0) {
+        this.definitions.prefetch({
+          ...state,
+          pagination: {
+            page: page - 1,
+            size,
+          },
+        });
+      }
+
+      // no next page
+      if (total <= (page + 1) * size) return;
+
+      this.definitions.prefetch({
+        ...state,
+        pagination: {
+          page: page + 1,
+          size,
+        },
+      });
+    });
+  }
 
   readonly mutation = queuedMutationResource({
     loader: ({ request }: InferedRequestLoaderParams<CreateUpdatePackage>) => {
@@ -230,7 +265,7 @@ export class EventDefinitionStore {
       revert();
     },
     onSuccess: () => {
-      this.definitions.reload();
+      this.definitions.reload(true);
     },
   });
 
