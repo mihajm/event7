@@ -3,7 +3,7 @@ import { inject, Injectable, untracked } from '@angular/core';
 import {
   extendedResource,
   InferedRequestLoaderParams,
-  mutationResource,
+  queuedMutationResource,
 } from '@e7/common/http';
 import { stored } from '@e7/common/reactivity';
 import { injectApiUrl } from '@e7/common/settings';
@@ -147,7 +147,7 @@ export class EventDefinitionStore {
     },
   });
 
-  readonly mutation = mutationResource({
+  readonly mutation = queuedMutationResource({
     loader: ({ request }: InferedRequestLoaderParams<CreateUpdatePackage>) => {
       if (!request) return of(null);
       if (request.type === 'create') return this.svc.create(request.value);
@@ -226,7 +226,7 @@ export class EventDefinitionStore {
         },
       };
     },
-    onError: (_, __, { revert }) => {
+    onError: (_, { revert }) => {
       revert();
     },
     onSuccess: () => {
