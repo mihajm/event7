@@ -34,7 +34,7 @@ export class Cache<T> {
     this.internal.set(key, {
       value,
       stale: Date.now() + this.staleTime,
-      timeout: setTimeout(() => this.internal.delete(key), this.staleTime),
+      timeout: setTimeout(() => this.internal.delete(key), this.ttl),
     });
   }
 
