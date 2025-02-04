@@ -1,15 +1,14 @@
-import { FindManyOptions } from '@e7/common/db';
-import {
-  EventDefinitionColumn,
-  InsertDefinition,
-} from '@e7/event-definition/db';
+import { FindManyOptions, toFilterEntries } from '@e7/common/db';
+import { EventDefinitionColumn } from '@e7/event-definition/db';
 import {
   CreateEventDefinitionDTO,
   UpdateEventDefinitionDTO,
 } from '@e7/event-definition/shared';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import type { Request as ExpressRequest } from 'express';
 import { AdsPermissionService } from './ads-permission.service';
 import {
+  EVENT_DEFINITION_COLUMN_MAP,
   EventDefinitionRepository,
   UpdateEventDefinition,
 } from './event-definition.repository';
@@ -31,36 +30,32 @@ function parseUpdateDTO(
   return obj;
 }
 
-function isAlreadyFilteringAds(
-  opt?: FindManyOptions<InsertDefinition, EventDefinitionColumn>,
-) {
-  const typeParam = opt?.filters?.type;
-  if (!typeParam) return false;
+function isAlreadyFilteringAds(opt?: FindManyOptions<EventDefinitionColumn>) {
+  const typeParamFilters = opt?.filters?.filter(([key]) =>
+    key.includes('type'),
+  );
+  if (!typeParamFilters?.length) return false;
 
-  if (typeParam !== 'ads') return true;
-
-  const notParam = opt?.filters?.['type.not'];
-
-  if (!notParam) return false;
-
-  if (notParam === 'ads') return true;
-
-  return false;
+  return typeParamFilters.some(([key, value]) => {
+    const filteringForOthers = value !== 'ads' && key === 'type.eq';
+    if (filteringForOthers) return true;
+    return value === 'ads' && key === 'type.neq';
+  });
 }
 
 function adPermissionFilters(ip: string, svc: AdsPermissionService) {
   return async (
-    opt?: FindManyOptions<InsertDefinition, EventDefinitionColumn>,
-  ): Promise<FindManyOptions<InsertDefinition, EventDefinitionColumn>> => {
+    opt?: FindManyOptions<EventDefinitionColumn>,
+  ): Promise<FindManyOptions<EventDefinitionColumn>> => {
     if (isAlreadyFilteringAds(opt) || (await svc.hasPermission(ip)))
       return opt ?? {};
 
     return {
       ...opt,
-      filters: {
-        ...opt?.filters,
-        'type.not': 'ads',
-      },
+      filters: [
+        ...(opt?.filters?.filter(([key]) => !key.includes('type')) ?? []),
+        ['type.neq', 'ads'],
+      ],
     };
   };
 }
@@ -72,21 +67,44 @@ export class EventDefinitionService {
     private readonly ads: AdsPermissionService,
   ) {}
 
-  async list(
-    ip: string,
-    opt?: FindManyOptions<InsertDefinition, EventDefinitionColumn>,
-  ) {
+  async list(ip: string, opt?: FindManyOptions<EventDefinitionColumn>) {
     return this.repo.findMany(await adPermissionFilters(ip, this.ads)(opt));
+  }
+
+  async count(ip: string, opt?: FindManyOptions<EventDefinitionColumn>) {
+    return this.repo.count(
+      await adPermissionFilters(
+        ip,
+        this.ads,
+      )({ ...opt, pagination: undefined, sort: undefined }),
+    );
   }
 
   async listAndCount(
     ip: string,
-    opt?: FindManyOptions<InsertDefinition, EventDefinitionColumn>,
+    opt?: Omit<FindManyOptions<EventDefinitionColumn>, 'filters'>,
+    queryParams?: ExpressRequest['query'],
   ) {
+    const resolvedOpt = await adPermissionFilters(
+      ip,
+      this.ads,
+    )({
+      ...opt,
+      filters: toFilterEntries(EVENT_DEFINITION_COLUMN_MAP, queryParams),
+    });
+
     return Promise.all([
-      this.list(ip, opt),
-      adPermissionFilters(ip, this.ads)(opt).then((f) => this.repo.count(f)),
-    ]).then(([items, count]) => ({ items, count }));
+      this.list(ip, resolvedOpt),
+      this.count(ip, resolvedOpt),
+    ])
+      .then(([items, count]) => ({ items, count }))
+      .catch((e) => {
+        Logger.error(`Error listing and counting events: ${e}`);
+        return {
+          items: [],
+          count: 0,
+        };
+      });
   }
 
   async get(id: string, ip: string) {

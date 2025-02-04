@@ -12,9 +12,13 @@ import {
   Patch,
   Post,
   Query,
+  Request,
   Response,
 } from '@nestjs/common';
-import { Response as ExpressResponse } from 'express';
+import {
+  Request as ExpressRequest,
+  Response as ExpressResponse,
+} from 'express';
 import { EventDefinitionService } from './event-definition.service';
 
 function contentRange(total: number, offset: number, limit: number) {
@@ -35,17 +39,22 @@ export class EventDefinitionController {
   async list(
     @Ip() ip: string,
     @Response() res: ExpressResponse,
+    @Request() req: ExpressRequest,
     @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('sort') sort?: string | string[],
   ) {
-    const { items, count } = await this.svc.listAndCount(ip, {
-      pagination: {
-        offset: offset ?? 0,
-        limit: limit ?? 10,
+    const { items, count } = await this.svc.listAndCount(
+      ip,
+      {
+        pagination: {
+          offset: offset ?? 0,
+          limit: limit ?? 10,
+        },
+        sort: Array.isArray(sort) ? sort : sort ? [sort] : undefined,
       },
-      sort: Array.isArray(sort) ? sort : sort ? [sort] : undefined,
-    });
+      req.query,
+    );
 
     return res
       .set('Content-Range', contentRange(count, offset ?? 0, limit ?? 10))
