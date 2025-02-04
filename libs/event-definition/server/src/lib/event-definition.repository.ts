@@ -4,7 +4,12 @@ import {
   FindManyOptions,
   type Database,
 } from '@e7/common/db';
-import { eventDefinition, InsertDefinition } from '@e7/event-definition/db';
+import {
+  EVENT_DEFINITION_COLUMNS,
+  eventDefinition,
+  EventDefinitionColumn,
+  InsertDefinition,
+} from '@e7/event-definition/db';
 import { Inject, Injectable } from '@nestjs/common';
 import { count, eq, not } from 'drizzle-orm';
 import { PgSelect } from 'drizzle-orm/pg-core';
@@ -21,7 +26,7 @@ export type UpdateEventDefinition = Partial<CreateEventDefinition>;
 
 function addFilters<T extends PgSelect>(
   qb: T,
-  filters?: FindManyOptions<InsertDefinition>['filters'],
+  filters?: FindManyOptions<InsertDefinition, EventDefinitionColumn>['filters'],
 ) {
   if (!filters) return qb;
 
@@ -70,19 +75,29 @@ function addFilters<T extends PgSelect>(
 export class EventDefinitionRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
-  async findMany(opt?: FindManyOptions<InsertDefinition>) {
+  async findMany(
+    opt?: FindManyOptions<InsertDefinition, EventDefinitionColumn>,
+  ) {
     return addFilters(
-      buildFindMany(this.db.select().from(eventDefinition).$dynamic(), opt),
+      buildFindMany(
+        this.db.select().from(eventDefinition).$dynamic(),
+        EVENT_DEFINITION_COLUMNS,
+        opt,
+      ),
       opt?.filters,
     ).execute();
   }
 
-  async count(opt?: FindManyOptions<InsertDefinition>) {
+  async count(opt?: FindManyOptions<InsertDefinition, EventDefinitionColumn>) {
     return addFilters(
       buildFindMany(
         this.db.select({ count: count() }).from(eventDefinition).$dynamic(),
-        opt,
-        true,
+        EVENT_DEFINITION_COLUMNS,
+        {
+          ...opt,
+          sort: undefined,
+          pagination: undefined,
+        },
       ),
       opt?.filters,
     )

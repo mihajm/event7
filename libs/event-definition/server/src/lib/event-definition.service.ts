@@ -1,5 +1,8 @@
 import { FindManyOptions } from '@e7/common/db';
-import { InsertDefinition } from '@e7/event-definition/db';
+import {
+  EventDefinitionColumn,
+  InsertDefinition,
+} from '@e7/event-definition/db';
 import {
   CreateEventDefinitionDTO,
   UpdateEventDefinitionDTO,
@@ -28,7 +31,9 @@ function parseUpdateDTO(
   return obj;
 }
 
-function isAlreadyFilteringAds(opt?: FindManyOptions<InsertDefinition>) {
+function isAlreadyFilteringAds(
+  opt?: FindManyOptions<InsertDefinition, EventDefinitionColumn>,
+) {
   const typeParam = opt?.filters?.type;
   if (!typeParam) return false;
 
@@ -45,8 +50,8 @@ function isAlreadyFilteringAds(opt?: FindManyOptions<InsertDefinition>) {
 
 function adPermissionFilters(ip: string, svc: AdsPermissionService) {
   return async (
-    opt?: FindManyOptions<InsertDefinition>,
-  ): Promise<FindManyOptions<InsertDefinition>> => {
+    opt?: FindManyOptions<InsertDefinition, EventDefinitionColumn>,
+  ): Promise<FindManyOptions<InsertDefinition, EventDefinitionColumn>> => {
     if (isAlreadyFilteringAds(opt) || (await svc.hasPermission(ip)))
       return opt ?? {};
 
@@ -67,11 +72,17 @@ export class EventDefinitionService {
     private readonly ads: AdsPermissionService,
   ) {}
 
-  async list(ip: string, opt?: FindManyOptions<InsertDefinition>) {
+  async list(
+    ip: string,
+    opt?: FindManyOptions<InsertDefinition, EventDefinitionColumn>,
+  ) {
     return this.repo.findMany(await adPermissionFilters(ip, this.ads)(opt));
   }
 
-  async listAndCount(ip: string, opt?: FindManyOptions<InsertDefinition>) {
+  async listAndCount(
+    ip: string,
+    opt?: FindManyOptions<InsertDefinition, EventDefinitionColumn>,
+  ) {
     return Promise.all([
       this.list(ip, opt),
       adPermissionFilters(ip, this.ads)(opt).then((f) => this.repo.count(f)),

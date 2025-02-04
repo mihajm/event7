@@ -1,4 +1,5 @@
-import { PgSelect } from 'drizzle-orm/pg-core';
+import { asc, desc } from 'drizzle-orm';
+import { PgColumn, PgSelect } from 'drizzle-orm/pg-core';
 
 type PaginationOptions = {
   limit?: number;
@@ -15,9 +16,14 @@ type NotFilters<T> = {
   [K in keyof T as NotKey<K>]?: T[K];
 };
 
-export type FindManyOptions<T> = {
+export type ColumnName<TDef extends PgColumn> = TDef['name'];
+
+export type SortParameter<T extends string> = T | `-${T}`;
+
+export type FindManyOptions<T, TDef extends PgColumn> = {
   pagination?: PaginationOptions;
   filters?: BaseFilters<T> & NotFilters<T>;
+  sort?: SortParameter<ColumnName<TDef>>[];
 };
 
 function buildPagination<T extends PgSelect>(qb: T, opt?: PaginationOptions) {
@@ -26,11 +32,37 @@ function buildPagination<T extends PgSelect>(qb: T, opt?: PaginationOptions) {
   return qb;
 }
 
-export function buildFindMany<T, TSelect extends PgSelect>(
-  qb: TSelect,
-  opt?: FindManyOptions<T>,
-  noPagination = false,
+export function addSort<T extends PgSelect, TDefs extends PgColumn[]>(
+  qb: T,
+  defs: TDefs,
+  sort?: SortParameter<ColumnName<TDefs[number]>>[],
 ) {
+  if (!sort || sort.length === 0) return qb;
+
+  const cmds = sort
+    .map((s) => {
+      const wrapper = s.startsWith('-') ? desc : asc;
+      const colName = s.replace('-', '') as ColumnName<TDefs[number]>;
+
+      const col = defs.find((d) => d.name === colName);
+      return col ? wrapper(col) : null;
+    })
+    .filter((cmd) => cmd !== null);
+
+  if (cmds.length === 0) return qb;
+
+  if (cmds.length === 1) return qb.orderBy(cmds[0]);
+
+  return qb.orderBy(...cmds);
+}
+
+export function buildFindMany<
+  T,
+  TSelect extends PgSelect,
+  TDef extends PgColumn,
+>(qb: TSelect, defs: TDef[], opt?: FindManyOptions<T, TDef>) {
   if (!opt) return qb;
-  return noPagination ? qb : buildPagination(qb, opt.pagination);
+  qb = buildPagination(qb, opt.pagination);
+  qb = addSort(qb, defs, opt.sort);
+  return qb;
 }

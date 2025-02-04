@@ -37,12 +37,14 @@ export class EventDefinitionController {
     @Response() res: Res,
     @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('sort') sort?: string | string[],
   ) {
     const { items, count } = await this.svc.listAndCount(ip, {
       pagination: {
         offset: offset ?? 0,
         limit: limit ?? 10,
       },
+      sort: Array.isArray(sort) ? sort : sort ? [sort] : undefined,
     });
 
     return res
