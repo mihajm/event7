@@ -1,3 +1,5 @@
+import { entries } from '@e7/common/object';
+
 export const LOCALE_DELIM = '::LOCALE_DELIM::';
 
 export function flattenLocale<T extends object>(
@@ -13,7 +15,7 @@ export function flattenLocale<T extends object>(
       return;
     }
 
-    Object.entries(cur).forEach(([key, value]) =>
+    entries(cur).forEach(([key, value]) =>
       recurse(value, prevPath ? `${prevPath}${LOCALE_DELIM}${key}` : key),
     );
   };

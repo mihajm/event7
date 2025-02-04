@@ -2,7 +2,7 @@
 
 import { isDevMode } from '@angular/core';
 import type { ActivatedRouteSnapshot, ResolveFn } from '@angular/router';
-import { entries } from './entries';
+import { entries, keys } from '@e7/common/object';
 import { LOCALE_DELIM } from './flatten-locale';
 import {
   injectSupportedLocale,
@@ -45,7 +45,7 @@ export function registerLocale<
         !found.length ||
         !params ||
         !found.includes('{') ||
-        !Object.keys(params).length
+        !keys(params).length
       ) {
         return found;
       }

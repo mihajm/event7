@@ -1,4 +1,4 @@
-import { entries } from './entries';
+import { entries } from '@e7/common/object';
 import { SupportedLocale } from './locale.type';
 
 type LocaleStore = {

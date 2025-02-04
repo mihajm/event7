@@ -16,11 +16,13 @@
     "baseUrl": ".",
     "paths": {
       "@e7/common/big": ["libs/common/big-decimal/src/index.ts"],
+      "@e7/common/cache": ["libs/common/cache/src/index.ts"],
       "@e7/common/db": ["libs/common/db/src/index.ts"],
       "@e7/common/form": ["libs/common/form/src/index.ts"],
       "@e7/common/http": ["libs/common/http/src/index.ts"],
       "@e7/common/layout": ["libs/common/layout/src/index.ts"],
       "@e7/common/locale": ["libs/common/locale/src/index.ts"],
+      "@e7/common/object": ["libs/common/object/src/index.ts"],
       "@e7/common/reactivity": ["libs/common/reactivity/src/index.ts"],
       "@e7/common/router": ["libs/common/router/src/index.ts"],
       "@e7/common/settings": ["libs/common/settings/src/index.ts"],

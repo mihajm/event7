@@ -19,6 +19,7 @@ import {
 } from '@angular/material/dialog';
 import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
+import { keys } from '@e7/common/object';
 import { injectDisableTooltips } from '@e7/common/settings';
 import {
   EventDefinition,
@@ -242,7 +243,7 @@ export class EditEventTriggerComponent {
 
         const value = fromNullableToUpdate(r.id, r.state);
 
-        if (!Object.keys(value).length) return;
+        if (!keys(value).length) return;
 
         this.store.update(r.id, {
           value,

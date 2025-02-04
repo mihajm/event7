@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed, Signal, WritableSignal } from '@angular/core';
+import { values } from '@e7/common/object';
 import { DerivedSignal } from '@e7/common/reactivity';
 import {
   CreateFormControlOptions,
@@ -15,11 +16,6 @@ export type FormGroupSignal<
   children: TDerivations;
   ownError: Signal<string>;
 };
-
-function values<T extends object>(obj: T): Array<T[keyof T]> {
-  if (!obj) return [];
-  return Object.values(obj);
-}
 
 export function formGroup<
   T,
