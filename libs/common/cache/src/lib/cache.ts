@@ -1,3 +1,4 @@
+import { BehaviorSubject, map, skip } from 'rxjs';
 import { v7 } from 'uuid';
 
 type CacheEntry<T> = {
@@ -5,6 +6,7 @@ type CacheEntry<T> = {
   created: number;
   stale: number;
   useCount: number;
+  expiresAt: number;
   timeout: ReturnType<typeof setTimeout>;
 };
 
@@ -20,14 +22,19 @@ type OldsetCleanupType = {
   maxSize: number;
 };
 
+const ONE_DAY = 1000 * 60 * 60 * 24;
+const ONE_HOUR = 1000 * 60 * 60;
+
 type CleanupType = LRUCleanupType | OldsetCleanupType;
 
 export class Cache<T> {
-  private internal = new Map<string, CacheEntry<T>>();
+  private readonly internal$ = new BehaviorSubject(
+    new Map<string, CacheEntry<T>>(),
+  );
 
   constructor(
-    private readonly ttl: number,
-    private readonly staleTime: number,
+    private readonly ttl: number = ONE_DAY,
+    private readonly staleTime: number = ONE_HOUR,
     private readonly cleanupOpt: CleanupType = {
       type: 'lru',
       maxSize: 1000,
@@ -44,26 +51,35 @@ export class Cache<T> {
     const destroyId = v7();
 
     const registry = new FinalizationRegistry((id: string) => {
-      if (id === destroyId) clearInterval(cleanupInterval);
+      if (id === destroyId) {
+        clearInterval(cleanupInterval);
+        this.internal$.complete();
+      }
     });
 
     registry.register(this, destroyId);
   }
 
   private getCacheEntrie(key: string) {
-    return this.internal.get(key);
+    return this.internal$.value.get(key);
+  }
+
+  private getEntryAndStale(key: string) {
+    const found = this.getCacheEntrie(key);
+    if (!found || found.expiresAt <= Date.now()) return null;
+
+    return {
+      entry: found,
+      isStale: found.stale < Date.now(),
+    };
   }
 
   get(key: string) {
-    const found = this.getCacheEntrie(key);
+    const found = this.getEntryAndStale(key);
     if (!found) return null;
+    found.entry.useCount++;
 
-    found.useCount++;
-
-    return {
-      value: found.value,
-      isStale: found.stale < Date.now(),
-    };
+    return { value: found.entry.value, isStale: found.isStale };
   }
 
   store(key: string, value: T) {
@@ -74,13 +90,16 @@ export class Cache<T> {
 
     const prevCount = entry?.useCount ?? 0;
 
-    this.internal.set(key, {
+    this.internal$.value.set(key, {
       value,
       created: entry?.created ?? Date.now(),
       useCount: prevCount + 1,
       stale: Date.now() + this.staleTime,
+      expiresAt: Date.now() + this.ttl,
       timeout: setTimeout(() => this.invalidate(key), this.ttl),
     });
+
+    this.internal$.next(this.internal$.value);
 
     this.cleanup();
   }
@@ -89,30 +108,47 @@ export class Cache<T> {
     const entry = this.getCacheEntrie(key);
     if (entry) {
       clearTimeout(entry.timeout);
-      this.internal.delete(key);
+      this.internal$.value.delete(key);
+      this.internal$.next(this.internal$.value);
     }
   }
 
-  private cleanup() {
-    if (this.internal.size <= this.cleanupOpt.maxSize) return;
+  changes$(key: string) {
+    return this.internal$.pipe(
+      skip(1),
+      map(() => {
+        const found = this.getEntryAndStale(key);
+        if (!found) return null;
+        return {
+          value: found.entry.value,
+          isStale: found.isStale,
+        };
+      }),
+    );
+  }
 
-    const sorted = Array.from(this.internal.entries()).toSorted((a, b) => {
-      if (this.cleanupOpt.type === 'lru') {
-        return a[1].useCount - b[1].useCount; // least used first
-      } else {
-        return a[1].created - b[1].created; // oldest first
-      }
-    });
+  private cleanup() {
+    if (this.internal$.value.size <= this.cleanupOpt.maxSize) return;
+
+    const sorted = Array.from(this.internal$.value.entries()).toSorted(
+      (a, b) => {
+        if (this.cleanupOpt.type === 'lru') {
+          return a[1].useCount - b[1].useCount; // least used first
+        } else {
+          return a[1].created - b[1].created; // oldest first
+        }
+      },
+    );
 
     const keepCount = Math.floor(this.cleanupOpt.maxSize / 2);
 
-    const keep = sorted.slice(keepCount);
-    const removed = sorted.slice(0, -keepCount);
+    const removed = sorted.slice(0, sorted.length - keepCount);
+    const keep = sorted.slice(removed.length, sorted.length);
 
     removed.forEach(([, e]) => {
       clearTimeout(e.timeout);
     });
 
-    this.internal = new Map(keep);
+    this.internal$.next(new Map(keep));
   }
 }
