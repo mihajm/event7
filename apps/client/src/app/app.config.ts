@@ -1,10 +1,15 @@
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withFetch,
+  withInterceptors,
+} from '@angular/common/http';
 import {
   type ApplicationConfig,
   provideExperimentalZonelessChangeDetection,
 } from '@angular/core';
 import { provideDateFnsAdapter } from '@angular/material-date-fns-adapter';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { dedupeRequestsInterceptor } from '@e7/common/http';
 import { provideLocalizedRouter } from '@e7/common/locale';
 import { provideClientConfig } from '@e7/common/settings';
 
@@ -26,7 +31,10 @@ export const appConfig: ApplicationConfig = {
       },
     ]),
     provideAnimationsAsync(),
-    provideHttpClient(withFetch()),
+    provideHttpClient(
+      withFetch(),
+      withInterceptors([dedupeRequestsInterceptor()]),
+    ),
     provideDateFnsAdapter(),
   ],
 };
