@@ -15,7 +15,7 @@ export class IPLocationService {
     if (!ip) return Promise.resolve(null);
     if (cached && !cached.isStale) return cached.value;
 
-    const promise = fetch(`${this.url}/json/${ip}`)
+    const promise = fetch(`${this.url}/json/${ip}?fields=countryCode`)
       .then((r) => r.json())
       .then((r: { countryCode?: string }) => {
         if (!r.countryCode) {
