@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
@@ -26,6 +27,7 @@ import { ProvidedErrorDirective } from './validation';
   encapsulation: ViewEncapsulation.None,
   host: {
     '[class.app-textarea-field]': 'true',
+    '[class.right]': 'align() === "right"',
   },
   imports: [
     FormsModule,
@@ -39,12 +41,14 @@ import { ProvidedErrorDirective } from './validation';
       [floatLabel]="floatLabel()"
       [hideRequiredMarker]="hideRequiredMarker()"
       [subscriptSizing]="subscriptSizing()"
+      [dir]="directions().formField"
     >
       @if (state().label()) {
         <mat-label>{{ state().label() }}</mat-label>
       }
       <textarea
         matInput
+        [dir]="directions().input"
         [(ngModel)]="state().value"
         [autocomplete]="state().autocomplete()"
         [placeholder]="state().placeholder()"
@@ -67,6 +71,11 @@ import { ProvidedErrorDirective } from './validation';
   styles: `
     .app-textarea-field {
       display: contents;
+      &.right {
+        mat-label {
+          padding-left: 1rem;
+        }
+      }
     }
   `,
 })
@@ -94,6 +103,21 @@ export class TextareaFieldComponent<TParent = undefined> {
   );
 
   private readonly model = viewChild.required(NgModel);
+  readonly align = input<'left' | 'right'>('left');
+
+  protected readonly directions = computed(() => {
+    if (this.align() === 'left') {
+      return {
+        formField: 'auto',
+        input: 'auto',
+      } as const;
+    }
+
+    return {
+      formField: 'rtl',
+      input: 'ltr',
+    } as const;
+  });
 
   constructor() {
     effect(() => {

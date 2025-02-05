@@ -38,24 +38,28 @@ export type FieldState<T, TParent = undefined> =
       @case ('string') {
         <app-string-field
           [subscriptSizing]="subscriptSizing()"
+          [align]="align()"
           [state]="$any(state())"
         />
       }
       @case ('date') {
         <app-date-field
           [subscriptSizing]="subscriptSizing()"
+          [align]="align()"
           [state]="$any(state())"
         />
       }
       @case ('number') {
         <app-number-field
           [subscriptSizing]="subscriptSizing()"
+          [align]="align()"
           [state]="$any(state())"
         />
       }
       @case ('select') {
         <app-select-field
           [subscriptSizing]="subscriptSizing()"
+          [align]="align()"
           [state]="$any(state())"
         />
       }
@@ -74,4 +78,6 @@ export class FieldComponent<T, TParent = undefined> {
     inject(MAT_FORM_FIELD_DEFAULT_OPTIONS, { optional: true })
       ?.subscriptSizing ?? 'fixed',
   );
+
+  readonly align = input<'left' | 'right'>('left');
 }

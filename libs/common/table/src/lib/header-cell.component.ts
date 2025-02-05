@@ -334,8 +334,9 @@ export function injectCreateHeaderCell() {
       <app-field
         [state]="state().filter.children.value"
         subscriptSizing="dynamic"
+        [align]="state().column.align()"
       />
-      <div>
+      <div class="actions">
         <button
           type="button"
           mat-icon-button
@@ -443,6 +444,11 @@ export function injectCreateHeaderCell() {
         }
       }
 
+      div.actions {
+        display: flex;
+        align-items: center;
+      }
+
       &:hover {
         div.container button {
           opacity: 1;
@@ -453,8 +459,12 @@ export function injectCreateHeaderCell() {
         justify-content: flex-end;
 
         div.container {
-          justify-content: flex-start;
+          justify-content: flex-end;
           flex-direction: row-reverse;
+
+          div.actions {
+            flex-direction: row-reverse;
+          }
         }
       }
     }

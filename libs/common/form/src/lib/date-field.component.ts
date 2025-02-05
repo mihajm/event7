@@ -110,6 +110,7 @@ export function injectCreateDateState<TParent = undefined>(
   encapsulation: ViewEncapsulation.None,
   host: {
     '[class.app-date-field]': 'true',
+    '[class.right]': 'align() === "right"',
   },
   template: `
     <mat-form-field
@@ -117,12 +118,14 @@ export function injectCreateDateState<TParent = undefined>(
       [floatLabel]="floatLabel()"
       [subscriptSizing]="subscriptSizing()"
       [hideRequiredMarker]="hideRequiredMarker()"
+      [dir]="directions().formField"
     >
       @if (state().label()) {
         <mat-label>{{ state().label() }}</mat-label>
       }
       <input
         matInput
+        [dir]="directions().input"
         [(ngModel)]="state().value"
         [disabled]="state().disabled()"
         [readonly]="state().readonly()"
@@ -152,6 +155,11 @@ export function injectCreateDateState<TParent = undefined>(
   styles: `
     .app-date-field {
       display: contents;
+      &.right {
+        mat-label {
+          padding-left: 1rem;
+        }
+      }
     }
   `,
 })
@@ -176,6 +184,21 @@ export class DateFieldComponent<TParent = undefined> {
   );
 
   private readonly model = viewChild.required(NgModel);
+  readonly align = input<'left' | 'right'>('left');
+
+  protected readonly directions = computed(() => {
+    if (this.align() === 'left') {
+      return {
+        formField: 'auto',
+        input: 'auto',
+      } as const;
+    }
+
+    return {
+      formField: 'rtl',
+      input: 'ltr',
+    } as const;
+  });
 
   constructor() {
     effect(() => {

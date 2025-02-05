@@ -84,6 +84,7 @@ export function injectCreateStringState<TParent = undefined>(
   encapsulation: ViewEncapsulation.None,
   host: {
     '[class.app-string-field]': 'true',
+    '[class.right]': 'align() === "right"',
   },
   imports: [
     FormsModule,
@@ -97,12 +98,14 @@ export function injectCreateStringState<TParent = undefined>(
       [floatLabel]="floatLabel()"
       [hideRequiredMarker]="hideRequiredMarker()"
       [subscriptSizing]="subscriptSizing()"
+      [dir]="directions().formField"
     >
       @if (state().label()) {
         <mat-label>{{ state().label() }}</mat-label>
       }
       <input
         matInput
+        [dir]="directions().input"
         [(ngModel)]="state().value"
         [autocomplete]="state().autocomplete()"
         [placeholder]="state().placeholder()"
@@ -123,6 +126,11 @@ export function injectCreateStringState<TParent = undefined>(
   styles: `
     .app-string-field {
       display: contents;
+      &.right {
+        mat-label {
+          padding-left: 1rem;
+        }
+      }
     }
   `,
 })
@@ -149,6 +157,21 @@ export class StringFieldComponent<TParent = undefined> {
   );
 
   private readonly model = viewChild.required(NgModel);
+  readonly align = input<'left' | 'right'>('left');
+
+  protected readonly directions = computed(() => {
+    if (this.align() === 'left') {
+      return {
+        formField: 'auto',
+        input: 'auto',
+      } as const;
+    }
+
+    return {
+      formField: 'rtl',
+      input: 'ltr',
+    } as const;
+  });
 
   constructor() {
     effect(() => {

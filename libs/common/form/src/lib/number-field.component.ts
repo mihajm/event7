@@ -84,6 +84,7 @@ export function injectCreateNumberState<TParent = undefined>(
   encapsulation: ViewEncapsulation.None,
   host: {
     '[class.app-number-field]': 'true',
+    '[class.right]': 'align() === "right"',
   },
   imports: [
     FormsModule,
@@ -97,12 +98,14 @@ export function injectCreateNumberState<TParent = undefined>(
       [floatLabel]="floatLabel()"
       [hideRequiredMarker]="hideRequiredMarker()"
       [subscriptSizing]="subscriptSizing()"
+      [dir]="directions().formField"
     >
       @if (state().label()) {
         <mat-label>{{ state().label() }}</mat-label>
       }
       <input
         matInput
+        [dir]="directions().input"
         type="number"
         [(ngModel)]="state().value"
         [autocomplete]="state().autocomplete()"
@@ -124,6 +127,17 @@ export function injectCreateNumberState<TParent = undefined>(
   styles: `
     .app-number-field {
       display: contents;
+
+      &.right {
+        mat-label {
+          padding-left: 1rem;
+        }
+
+        input {
+          position: relative;
+          left: 1rem;
+        }
+      }
     }
   `,
 })
@@ -150,6 +164,22 @@ export class NumberFieldComponent<TParent = undefined> {
   );
 
   private readonly model = viewChild.required(NgModel);
+
+  readonly align = input<'left' | 'right'>('left');
+
+  protected readonly directions = computed(() => {
+    if (this.align() === 'left') {
+      return {
+        formField: 'auto',
+        input: 'auto',
+      } as const;
+    }
+
+    return {
+      formField: 'rtl',
+      input: 'ltr',
+    } as const;
+  });
 
   constructor() {
     effect(() => {

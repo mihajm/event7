@@ -167,6 +167,7 @@ export function injectCreateSelectState<T, TParent = undefined>(
   encapsulation: ViewEncapsulation.None,
   host: {
     '[class.app-select-field]': 'true',
+    '[class.right]': 'align() === "right"',
   },
   template: `
     <mat-form-field
@@ -174,11 +175,13 @@ export function injectCreateSelectState<T, TParent = undefined>(
       [floatLabel]="floatLabel()"
       [subscriptSizing]="subscriptSizing()"
       [hideRequiredMarker]="hideRequiredMarker()"
+      [dir]="directions().formField"
     >
       @if (state().label()) {
         <mat-label>{{ state().label() }}</mat-label>
       }
       <mat-select
+        [dir]="directions().input"
         [class.readOnly]="state().readonly()"
         [(ngModel)]="state().value"
         (closed)="state().markAsTouched()"
@@ -221,6 +224,16 @@ export function injectCreateSelectState<T, TParent = undefined>(
   styles: `
     .app-select-field {
       display: contents;
+      &.right {
+        mat-label {
+          padding-left: 1rem;
+        }
+
+        mat-select {
+          position: relative;
+          left: 1rem;
+        }
+      }
     }
   `,
 })
@@ -275,6 +288,21 @@ export class SelectFieldComponent<T, TParent = undefined> {
   );
 
   private readonly model = viewChild.required(NgModel);
+  readonly align = input<'left' | 'right'>('left');
+
+  protected readonly directions = computed(() => {
+    if (this.align() === 'left') {
+      return {
+        formField: 'auto',
+        input: 'auto',
+      } as const;
+    }
+
+    return {
+      formField: 'rtl',
+      input: 'ltr',
+    } as const;
+  });
 
   constructor() {
     effect(() => {
