@@ -13,7 +13,7 @@ export function createAddSort<TDef extends PgColumn>(
   ) => {
     if (!sort || sort.length === 0) return qb;
 
-    const cmds = sort
+    const cmds = Array.from(new Set(sort).values())
       .map((s) => {
         const wrapper = s.startsWith('-') ? desc : asc;
         const colName = s.replace('-', '') as ColumnName<TDef>;
