@@ -18,6 +18,9 @@ export default createSharedTranslation('sl-SI', {
   areYouSure: 'Ali ste prepričani?',
   editItem: 'Uredi {item}',
   search: 'Išči',
+  retry: 'Ponovi',
+  unknown: 'Neznano',
+  open: 'Odpri',
   table: {
     filter: {
       eq: 'Enako',

@@ -15,6 +15,10 @@ export default createEventDefTranslation('sl-SI', {
   modifyEventDefinition: 'Uredi definicijo dogodka',
   youWantToArchiveThisEvent: 'Potrditev bo arhivirala to definicijo',
   actions: 'Akcije',
+  failedToFetch: 'Nalaganje definicij dogodkov ni uspelo',
+  failedToFetchTypes: 'Nalaganje tipov definicij ni uspelo',
+  failedToUpdate: 'Posodabljanje definicije dogodka {name} ni uspelo',
+  failedToCreate: 'Ustvarjanje definicije dogodka {name} ni uspelo',
   eventStatus: {
     active: 'Aktivno',
     archived: 'Arhivirano',

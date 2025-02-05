@@ -15,6 +15,10 @@ const ns = createNamespace('eventDef', {
   modifyEventDefinition: 'Modify event definition',
   actions: 'Actions',
   youWantToArchiveThisEvent: 'Confirming will archive this definition',
+  failedToFetch: 'Failed to fetch event definitions',
+  failedToFetchTypes: 'Failed to fetch definition types',
+  failedToUpdate: 'Failed to update event definition: {name}',
+  failedToCreate: 'Failed to create event definition: {name}',
   eventStatus: {
     active: 'Active',
     archived: 'Archived',

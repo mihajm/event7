@@ -25,6 +25,7 @@
       "@e7/common/reactivity": ["libs/common/reactivity/src/index.ts"],
       "@e7/common/router": ["libs/common/router/src/index.ts"],
       "@e7/common/settings": ["libs/common/settings/src/index.ts"],
+      "@e7/common/snack": ["libs/common/snack/src/index.ts"],
       "@e7/common/table": ["libs/common/table/src/index.ts"],
       "@e7/common/theme": ["libs/common/theme/src/index.ts"],
       "@e7/event-definition/client": [

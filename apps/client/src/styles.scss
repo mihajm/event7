@@ -19,3 +19,9 @@ body {
 router-outlet {
   display: contents;
 }
+
+lib-snack:has(.app-snack-label) {
+  width: 100%;
+  display: inline-flex;
+  justify-content: space-between;
+}

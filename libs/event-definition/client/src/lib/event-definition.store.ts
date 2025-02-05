@@ -16,6 +16,7 @@ import {
 import { removeEmptyKeys } from '@e7/common/object';
 import { debounced, stored } from '@e7/common/reactivity';
 import { injectApiUrl } from '@e7/common/settings';
+import { SnackService } from '@e7/common/snack';
 import { TableStateValue, toServerFilters } from '@e7/common/table';
 import {
   CreateEventDefinitionDTO,
@@ -25,6 +26,7 @@ import {
 } from '@e7/event-definition/shared';
 import { combineLatestWith, filter, map, Observable, of } from 'rxjs';
 import { v7 } from 'uuid';
+import { injectNamespaceT } from './locale';
 
 function toPaginationParams(opt: TableStateValue['pagination']) {
   const size = opt?.size ?? 10;
@@ -72,7 +74,7 @@ export class EventDefinitionService {
   list(
     opt?: TableStateValue,
   ): Observable<{ events: EventDefinition[]; total: number }> {
-    if (!this.url) throw new Error('Event definition api disabled');
+    if (!this.url) return of({ events: [], total: 0 });
     return this.http
       .get<EventDefinition[]>(`${this.url}/event-definition`, {
         params: removeEmptyKeys(toListParams(opt)),
@@ -95,13 +97,13 @@ export class EventDefinitionService {
       );
   }
 
-  get(id: string): Observable<EventDefinition> {
-    if (!this.url) throw new Error('Event definition api disabled');
+  get(id: string): Observable<EventDefinition | null> {
+    if (!this.url) of(null);
     return this.http.get<EventDefinition>(`${this.url}/event-definition/${id}`);
   }
 
-  create(body: CreateEventDefinitionDTO): Observable<EventDefinition> {
-    if (!this.url) throw new Error('Event definition api disabled');
+  create(body: CreateEventDefinitionDTO): Observable<EventDefinition | null> {
+    if (!this.url) of(null);
     return this.http.post<EventDefinition>(
       `${this.url}/event-definition`,
       body,
@@ -116,8 +118,8 @@ export class EventDefinitionService {
   patch(
     id: string,
     body: UpdateEventDefinitionDTO,
-  ): Observable<EventDefinition> {
-    if (!this.url) throw new Error('Event definition api disabled');
+  ): Observable<EventDefinition | null> {
+    if (!this.url) of(null);
     return this.http.patch<EventDefinition>(
       `${this.url}/event-definition/${id}`,
       body,
@@ -207,6 +209,9 @@ function debounceState(
   providedIn: 'root',
 })
 export class EventDefinitionStore {
+  private readonly t = injectNamespaceT();
+  private readonly snack = inject(SnackService);
+
   private readonly svc = inject(EventDefinitionService);
 
   readonly listState = stored<TableStateValue>(
@@ -252,6 +257,18 @@ export class EventDefinitionStore {
     cache: {
       prefix: 'event-definition',
       ttl: 1000 * 60 * 60, // 1 hour
+    },
+    onError: () => {
+      this.snack.open({
+        type: 'error',
+        message: this.t('eventDef.failedToFetch'),
+        actions: [
+          {
+            label: this.t('shared.retry'),
+            action: (() => this.definitions.reload(true)).bind(this),
+          },
+        ],
+      });
     },
   });
 
@@ -340,6 +357,8 @@ export class EventDefinitionStore {
           retry: () => {
             // noop
           },
+          type: 'create',
+          name: this.t('shared.unknown'),
         };
 
       if (r.type === 'create') {
@@ -359,6 +378,8 @@ export class EventDefinitionStore {
           retry: () => {
             this.mutation.next(r);
           },
+          type: 'create',
+          name: r.value.name,
         };
       }
 
@@ -379,6 +400,8 @@ export class EventDefinitionStore {
           retry: () => {
             this.mutation.next(r);
           },
+          type: 'update',
+          name: r.value.name,
         };
 
       const prev = untracked(this.definitions.value);
@@ -404,10 +427,30 @@ export class EventDefinitionStore {
         retry: () => {
           this.mutation.next(r);
         },
+        type: 'update',
+        name: r.value.name,
       };
     },
-    onError: (_, { revert }) => {
+    onError: (_, { revert, reOpen, retry, type, name }) => {
+      const eventName = name || this.t('shared.unknown');
       revert();
+      this.snack.open({
+        type: 'error',
+        message:
+          type === 'create'
+            ? this.t('eventDef.failedToCreate', { name: eventName })
+            : this.t('eventDef.failedToUpdate', { name: eventName }),
+        actions: [
+          {
+            label: this.t('shared.retry'),
+            action: retry,
+          },
+          {
+            label: this.t('shared.open'),
+            action: reOpen,
+          },
+        ],
+      });
     },
     onSuccess: () => {
       this.definitions.reload(true);

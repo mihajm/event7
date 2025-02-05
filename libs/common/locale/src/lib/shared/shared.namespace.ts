@@ -18,6 +18,9 @@ const ns = createNamespace('shared', {
   areYouSure: 'Are you sure?',
   editItem: 'Edit {item}',
   search: 'Search',
+  retry: 'Retry',
+  open: 'Open',
+  unknown: 'Unknown',
   table: {
     filter: {
       eq: 'Equals',
