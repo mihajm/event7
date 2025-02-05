@@ -7,6 +7,7 @@ import {
   Signal,
   untracked,
 } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
   extendedResource,
   InferedRequestLoaderParams,
@@ -19,9 +20,10 @@ import { TableStateValue, toServerFilters } from '@e7/common/table';
 import {
   CreateEventDefinitionDTO,
   EventDefinition,
+  EventDefinitionChangeEvent,
   UpdateEventDefinitionDTO,
 } from '@e7/event-definition/shared';
-import { map, Observable, of } from 'rxjs';
+import { combineLatestWith, filter, map, Observable, of } from 'rxjs';
 import { v7 } from 'uuid';
 
 function toPaginationParams(opt: TableStateValue['pagination']) {
@@ -125,6 +127,30 @@ export class EventDefinitionService {
         },
       },
     );
+  }
+
+  changes(): Observable<EventDefinitionChangeEvent> {
+    const source = new EventSource(
+      `${this.url}/event-definition/changes/${this.clientId}`,
+    );
+
+    return new Observable<EventDefinitionChangeEvent | null>((sub) => {
+      source.onmessage = (e) => {
+        try {
+          sub.next(JSON.parse(e.data));
+        } catch {
+          sub.next(null);
+        }
+      };
+
+      source.onerror = () => {
+        sub.complete();
+      };
+
+      return () => {
+        source.close();
+      };
+    }).pipe(filter((e) => e !== null));
   }
 }
 
@@ -245,6 +271,39 @@ export class EventDefinitionStore {
         },
       });
     });
+
+    const idSet = computed(
+      () => this.definitions.value().events.map((d) => d.id),
+      {
+        equal: (a, b) => {
+          if (a.length !== b.length) return false;
+          if (!a.length) return true;
+          return a.every((v) => b.includes(v));
+        },
+      },
+    );
+
+    this.svc
+      .changes()
+      .pipe(
+        combineLatestWith(toObservable(idSet)),
+        filter(([change, set]) => set.includes(change.value.id)),
+        map(([change]) => change),
+        takeUntilDestroyed(),
+      )
+      .subscribe((change) => {
+        if (untracked(this.definitions.isLoading)) return;
+
+        this.definitions.set({
+          events: untracked(this.definitions.value).events.map((d) =>
+            d.id === change.value.id ? { ...d, ...change.value } : d,
+          ),
+          total:
+            change.type === 'create'
+              ? untracked(this.definitions.value).total + 1
+              : untracked(this.definitions.value).total,
+        });
+      });
   }
 
   readonly mutation = queuedMutationResource({
@@ -271,9 +330,17 @@ export class EventDefinitionStore {
         };
 
       if (r.type === 'create') {
+        this.definitions.set({
+          ...untracked(this.definitions.value),
+          total: untracked(this.definitions.value).total + 1,
+        });
+
         return {
           revert: () => {
-            // noop;
+            // this.definitions.set({
+            //   ...untracked(this.definitions.value),
+            //   total: untracked(this.definitions.value).total - 1,
+            // });
           },
           reOpen: r.reOpen,
           retry: () => {

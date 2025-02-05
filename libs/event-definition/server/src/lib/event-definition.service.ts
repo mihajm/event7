@@ -3,7 +3,7 @@ import { removeEmptyKeys } from '@e7/common/object';
 import { EventDefinitionColumn } from '@e7/event-definition/db';
 import {
   CreateEventDefinitionDTO,
-  EventDefinition,
+  EventDefinitionChangeEvent,
   UpdateEventDefinitionDTO,
 } from '@e7/event-definition/shared';
 import {
@@ -13,7 +13,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request as ExpressRequest } from 'express';
-import { filter, from, Subject, switchMap } from 'rxjs';
+import { filter, from, map, Subject, switchMap } from 'rxjs';
 import { AdsPermissionService } from './ads-permission.service';
 import {
   EVENT_DEFINITION_COLUMN_MAP,
@@ -68,16 +68,9 @@ function adPermissionFilters(ip: string, svc: AdsPermissionService) {
   };
 }
 
-type ChangeEvent = {
-  value: Omit<EventDefinition, 'type'> & {
-    type: Required<EventDefinition>['type'];
-  };
-  clientId?: string;
-};
-
 @Injectable()
 export class EventDefinitionService {
-  private readonly events$ = new Subject<ChangeEvent>();
+  private readonly events$ = new Subject<EventDefinitionChangeEvent>();
 
   constructor(
     private readonly repo: EventDefinitionRepository,
@@ -138,7 +131,8 @@ export class EventDefinitionService {
     if (e.type === 'ads' && !(await this.ads.hasPermission(ip)))
       throw new UnauthorizedException(`Not allowed to create ads events`);
     const created = await this.repo.create(e);
-    if (created) this.events$.next({ value: created, clientId });
+    if (created)
+      this.events$.next({ value: created, clientId, type: 'create' });
     return created;
   }
 
@@ -167,6 +161,7 @@ export class EventDefinitionService {
           updatedAt: updated.updatedAt,
         },
         clientId,
+        type: 'update',
       });
 
     return updated;
@@ -184,18 +179,20 @@ export class EventDefinitionService {
   }
 
   changes(clientId: string, ip: string) {
-    return from(this.ads.hasPermission(ip)).pipe(
-      switchMap((hasPermission) =>
-        this.events$.pipe(
-          filter((e) => {
-            // Do not send ads events to clients without permission
-            if (e.value.type === 'ads' && !hasPermission) return false;
-            // Do not send to the client that triggered the event
-            if (e.clientId === clientId) return false;
-            return true;
-          }),
+    return from(this.ads.hasPermission(ip))
+      .pipe(
+        switchMap((hasPermission) =>
+          this.events$.pipe(
+            filter((e) => {
+              // Do not send ads events to clients without permission
+              if (e.value.type === 'ads' && !hasPermission) return false;
+              // Do not send to the client that triggered the event
+              if (e.clientId === clientId) return false;
+              return true;
+            }),
+          ),
         ),
-      ),
-    );
+      )
+      .pipe(map((e) => ({ value: e.value, type: e.type })));
   }
 }

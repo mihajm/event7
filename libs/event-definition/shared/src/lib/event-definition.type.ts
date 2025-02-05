@@ -66,3 +66,11 @@ export type CreateEventDefinitionDTO = z.infer<
 export type UpdateEventDefinitionDTO = z.infer<
   typeof updateEventDefinitionSchema
 >;
+
+export type EventDefinitionChangeEvent = {
+  value: Omit<EventDefinition, 'type'> & {
+    type: Required<EventDefinition>['type'];
+  };
+  clientId?: string;
+  type: 'create' | 'update';
+};

@@ -36,7 +36,9 @@ export function injectTableLocalization(): Locale {
 
   return {
     ...provided,
-    noItemsFound: t('shared.noItemsFound', { items: provided.plural }),
+    noItemsFound: t('shared.noItemsFound', {
+      items: provided.plural.toLowerCase(),
+    }),
     pagination: {
       firstPage: t('shared.table.pagination.firstPage'),
       lastPage: t('shared.table.pagination.lastPage'),

@@ -25,6 +25,7 @@ import {
   Request as ExpressRequest,
   Response as ExpressResponse,
 } from 'express';
+import { map } from 'rxjs';
 import { fromError, isZodErrorLike } from 'zod-validation-error';
 import { EventDefinitionService } from './event-definition.service';
 
@@ -124,6 +125,6 @@ export class EventDefinitionController {
 
   @Sse('changes/:id')
   changes(@Param('id') clientId: string, @Ip() ip: string) {
-    return this.svc.changes(clientId, ip);
+    return this.svc.changes(clientId, ip).pipe(map((e) => JSON.stringify(e)));
   }
 }

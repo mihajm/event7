@@ -72,7 +72,6 @@ export class EventDefinitionRepository {
 
   async create(data: CreateEventDefinition) {
     delete data.createdAt;
-    delete data.updatedAt;
 
     return this.db
       .insert(eventDefinition)
@@ -82,7 +81,6 @@ export class EventDefinitionRepository {
   }
 
   async update(id: string, data: UpdateEventDefinition) {
-    delete data.updatedAt;
     delete data.createdAt;
     delete data.id;
 
