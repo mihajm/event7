@@ -87,7 +87,7 @@ export class EventDefinitionController {
     @Body() body: CreateEventDefinitionDTO,
     @Ip() ip: string,
     @Request() req: ExpressRequest,
-  ): Promise<EventDefinition | null> {
+  ): Promise<EventDefinition> {
     try {
       const validated = createEventDefinitionSchema.parse(body);
       const clientId = req.headers['x-client-id'];
@@ -108,7 +108,7 @@ export class EventDefinitionController {
     @Body() body: UpdateEventDefinitionDTO,
     @Ip() ip: string,
     @Request() req: ExpressRequest,
-  ): Promise<EventDefinition | null> {
+  ): Promise<EventDefinition> {
     try {
       const validated = updateEventDefinitionSchema.parse(body);
       const clientId = req.headers['x-client-id'];

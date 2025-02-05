@@ -9,6 +9,7 @@ import {
 } from '@e7/event-definition/shared';
 import {
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
   UnauthorizedException,
@@ -131,8 +132,8 @@ export class EventDefinitionService {
     if (e.type === 'ads' && !(await this.ads.hasPermission(ip)))
       throw new UnauthorizedException(`Not allowed to create ads events`);
     const created = await this.repo.create(e);
-    if (created)
-      this.events$.next({ value: created, clientId, type: 'create' });
+    if (!created) throw new InternalServerErrorException();
+    this.events$.next({ value: created, clientId, type: 'create' });
     return created;
   }
 
@@ -152,17 +153,17 @@ export class EventDefinitionService {
       throw new UnauthorizedException(`Not allowed to update ads events`);
 
     const updated = await this.repo.update(id, parseUpdateDTO(id, e));
-    if (updated)
-      this.events$.next({
-        value: {
-          ...removeEmptyKeys(e),
-          id,
-          type: updated.type,
-          updatedAt: updated.updatedAt,
-        },
-        clientId,
-        type: 'update',
-      });
+    if (!updated) throw new InternalServerErrorException();
+    this.events$.next({
+      value: {
+        ...removeEmptyKeys(e),
+        id,
+        type: updated.type,
+        updatedAt: updated.updatedAt,
+      },
+      clientId,
+      type: 'update',
+    });
 
     return updated;
   }
