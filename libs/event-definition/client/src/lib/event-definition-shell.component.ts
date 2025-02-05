@@ -14,6 +14,9 @@ import { EventDefinitionStore } from './event-definition.store';
     CreateEventDefinitionDialogTriggerComponent,
     MatProgressBar,
   ],
+  host: {
+    '[class.mobile]': 'store.mobile()',
+  },
   template: `
     <div>
       <mat-card>
@@ -63,17 +66,29 @@ import { EventDefinitionStore } from './event-definition.store';
         bottom: 1.4rem;
         right: 1.5rem;
       }
+
+      &.mobile {
+        padding: 0;
+        position: unset;
+        div mat-card {
+          border-width: 0;
+          height: 100%;
+          position: unset;
+        }
+
+        app-create-event-definition-dialog-trigger {
+          bottom: 1.5rem;
+          right: 1.5rem;
+        }
+      }
     }
   `,
 })
 export class EventDefinitionShellComponent {
-  private readonly store = inject(EventDefinitionStore);
+  protected readonly store = inject(EventDefinitionStore);
   private readonly typeStore = inject(EventDefinitionTypeStore);
 
-  protected Loading = computed(
-    () =>
-      this.store.definitions.isLoading() ||
-      this.typeStore.types.isLoading() ||
-      this.store.mutation.isLoading(),
+  protected readonly Loading = computed(
+    () => this.store.loading() || this.typeStore.types.isLoading(),
   );
 }

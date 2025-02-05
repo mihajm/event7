@@ -1,4 +1,5 @@
 import {
+  booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -10,7 +11,7 @@ import {
   untracked,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MatButtonModule, MatIconButton } from '@angular/material/button';
+import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
   MatDialog,
@@ -185,24 +186,38 @@ export class EditEventDefinitionDialogComponent {
 @Component({
   selector: 'app-edit-event-trigger',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatIconButton, MatIcon, MatTooltip],
+  imports: [MatButtonModule, MatIcon, MatTooltip],
   template: `
-    <button
-      type="button"
-      mat-icon-button
-      [matTooltip]="editLabel"
-      [matTooltipDisabled]="tooltipDisabled()"
-      [disabled]="disabled()"
-      (click)="open()"
-    >
-      <mat-icon>edit</mat-icon>
-    </button>
+    @if (fullButton()) {
+      <button
+        mat-button
+        (click)="open()"
+        [disabled]="disabled()"
+        [matTooltip]="editLabel"
+        [matTooltipDisabled]="tooltipDisabled()"
+      >
+        <mat-icon>edit</mat-icon>
+        <span>{{ editShortLabel }}</span>
+      </button>
+    } @else {
+      <button
+        type="button"
+        mat-icon-button
+        [matTooltip]="editLabel"
+        [matTooltipDisabled]="tooltipDisabled()"
+        [disabled]="disabled()"
+        (click)="open()"
+      >
+        <mat-icon>edit</mat-icon>
+      </button>
+    }
   `,
-  styles: ``,
 })
 export class EditEventTriggerComponent {
   private readonly t = injectNamespaceT();
   protected readonly editLabel = this.t('eventDef.modifyEventDefinition');
+  protected readonly editShortLabel = this.t('shared.edit');
+
   protected readonly tooltipDisabled = injectDisableTooltips();
   private sub = new Subscription();
   private destroy = inject(DestroyRef);
@@ -213,6 +228,7 @@ export class EditEventTriggerComponent {
   private readonly dialog = inject(MatDialog);
   private readonly store = inject(EventDefinitionStore);
   readonly state = input.required<EventDefinition>();
+  readonly fullButton = input(false, { transform: booleanAttribute });
 
   protected readonly disabled = computed(
     () => this.state().status === 'archived' || this.store.mutation.isLoading(),

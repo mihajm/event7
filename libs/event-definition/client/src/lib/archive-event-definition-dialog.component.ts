@@ -1,4 +1,5 @@
 import {
+  booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -8,7 +9,7 @@ import {
   Signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MatButtonModule, MatIconButton } from '@angular/material/button';
+import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
   MatDialog,
@@ -86,24 +87,43 @@ export class ArchiveEventDefinitionDialogComponent {
 @Component({
   selector: 'app-archive-event-trigger',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatIconButton, MatIcon, MatTooltip],
+  imports: [MatButtonModule, MatIcon, MatTooltip],
   template: `
-    <button
-      type="button"
-      mat-icon-button
-      [matTooltip]="archiveLabel"
-      [matTooltipDisabled]="tooltipDisabled()"
-      [disabled]="disabled()"
-      (click)="open()"
-    >
-      <mat-icon>delete</mat-icon>
-    </button>
+    @if (fullButton()) {
+      <button
+        type="button"
+        mat-button
+        [matTooltip]="archiveLabel"
+        [matTooltipDisabled]="tooltipDisabled()"
+        [disabled]="disabled()"
+        (click)="open()"
+      >
+        <mat-icon>delete</mat-icon>
+        {{ archiveShortLabel }}
+      </button>
+    } @else {
+      <button
+        type="button"
+        mat-icon-button
+        [matTooltip]="archiveLabel"
+        [matTooltipDisabled]="tooltipDisabled()"
+        [disabled]="disabled()"
+        (click)="open()"
+      >
+        <mat-icon>delete</mat-icon>
+      </button>
+    }
   `,
-  styles: ``,
+  styles: `
+    button[mat-button]:not(:disabled) {
+      color: var(--mat-sys-error);
+    }
+  `,
 })
 export class ArchiveEventTriggerComponent {
   private readonly t = injectNamespaceT();
   protected readonly archiveLabel = this.t('eventDef.archiveEventDefinition');
+  protected readonly archiveShortLabel = this.t('shared.archive');
   protected readonly tooltipDisabled = injectDisableTooltips();
   private sub = new Subscription();
   private destroy = inject(DestroyRef);
@@ -114,6 +134,7 @@ export class ArchiveEventTriggerComponent {
   private readonly dialog = inject(MatDialog);
   private readonly store = inject(EventDefinitionStore);
   readonly state = input.required<EventDefinition>();
+  readonly fullButton = input(false, { transform: booleanAttribute });
 
   protected readonly disabled = computed(
     () => this.state().status === 'archived' || this.store.mutation.isLoading(),

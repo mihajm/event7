@@ -19,6 +19,7 @@ export default createEventDefTranslation('sl-SI', {
   failedToFetchTypes: 'Nalaganje tipov definicij ni uspelo',
   failedToUpdate: 'Posodabljanje definicije dogodka {name} ni uspelo',
   failedToCreate: 'Ustvarjanje definicije dogodka {name} ni uspelo',
+  createdWithPriority: 'Ustvarjeno {date} s prioriteto',
   eventStatus: {
     active: 'Aktivno',
     archived: 'Arhivirano',

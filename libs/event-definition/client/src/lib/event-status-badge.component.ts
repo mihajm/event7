@@ -36,27 +36,15 @@ export function injectDisplayStatus() {
     :host {
       display: contents;
 
-      --draft-bg-light: color-mix(
-        in srgb,
-        hsl(15, 100%, 90%),
-        var(--mat-sys-primary) 10%
-      );
-
-      --draft-bg-dark: color-mix(
-        in srgb,
-        hsl(15, 100%, 30%),
-        var(--mat-sys-primary) 10%
-      );
-
       --active-bg-light: color-mix(
         in srgb,
-        hsl(164, 80%, 60%),
+        hsl(150, 80%, 60%),
         var(--mat-sys-primary) 10%
       );
 
       --active-bg-dark: color-mix(
         in srgb,
-        hsl(164, 80%, 20%),
+        hsl(150, 80%, 20%),
         var(--mat-sys-primary) 10%
       );
 
@@ -79,10 +67,13 @@ export function injectDisplayStatus() {
         }
 
         &.ready {
-          // purplish pinkish
-
           background: var(--mat-sys-primary-container);
           color: var(--mat-sys-on-primary-container);
+        }
+
+        &.draft {
+          background: var(--mat-sys-primary);
+          color: var(--mat-sys-on-primary);
         }
       }
     }

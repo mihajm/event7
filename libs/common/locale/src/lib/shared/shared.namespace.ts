@@ -21,6 +21,8 @@ const ns = createNamespace('shared', {
   retry: 'Retry',
   open: 'Open',
   unknown: 'Unknown',
+  edit: 'Edit',
+  archive: 'Archive',
   table: {
     filter: {
       eq: 'Equals',

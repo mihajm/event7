@@ -21,6 +21,8 @@ export default createSharedTranslation('sl-SI', {
   retry: 'Ponovi',
   unknown: 'Neznano',
   open: 'Odpri',
+  edit: 'Uredi',
+  archive: 'Arhiviraj',
   table: {
     filter: {
       eq: 'Enako',

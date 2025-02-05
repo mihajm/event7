@@ -1,3 +1,4 @@
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { HttpClient } from '@angular/common/http';
 import {
   computed,
@@ -7,7 +8,11 @@ import {
   Signal,
   untracked,
 } from '@angular/core';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import {
+  takeUntilDestroyed,
+  toObservable,
+  toSignal,
+} from '@angular/core/rxjs-interop';
 import {
   extendedResource,
   InferedRequestLoaderParams,
@@ -236,13 +241,28 @@ export class EventDefinitionStore {
 
   readonly debouncedState = debounceState(this.listState);
 
-  private readonly isMobile = computed(() => false);
+  private readonly breakpointObserver = inject(BreakpointObserver);
+
+  private readonly mobile$ = this.breakpointObserver
+    .observe([Breakpoints.Handset, Breakpoints.TabletPortrait])
+    .pipe(map((res) => res.matches));
+
+  readonly mobile = toSignal(this.mobile$, {
+    initialValue: this.breakpointObserver.isMatched([
+      Breakpoints.Handset,
+      Breakpoints.TabletPortrait,
+    ]),
+  });
 
   private readonly mobileOrDesktopState = computed((): TableStateValue => {
-    if (!this.isMobile()) return this.debouncedState();
+    if (!this.mobile()) return this.debouncedState();
 
     return {
-      pagination: this.debouncedState().pagination,
+      pagination: {
+        page: 0,
+        size: 50,
+      },
+      globalFilter: this.debouncedState().globalFilter,
     };
   });
 
@@ -456,6 +476,10 @@ export class EventDefinitionStore {
       this.definitions.reload(true);
     },
   });
+
+  readonly loading = computed(
+    () => this.definitions.isLoading() || this.mutation.isLoading(),
+  );
 
   create(pck: CreatePackage): void {
     this.mutation.next(pck);

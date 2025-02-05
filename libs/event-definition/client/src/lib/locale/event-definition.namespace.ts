@@ -19,6 +19,7 @@ const ns = createNamespace('eventDef', {
   failedToFetchTypes: 'Failed to fetch definition types',
   failedToUpdate: 'Failed to update event definition: {name}',
   failedToCreate: 'Failed to create event definition: {name}',
+  createdWithPriority: 'Created {date} with priority',
   eventStatus: {
     active: 'Active',
     archived: 'Archived',

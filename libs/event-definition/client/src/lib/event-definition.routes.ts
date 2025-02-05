@@ -13,7 +13,7 @@ export const EVENT_DEFINITION_ROUTES: Route[] = [
       {
         path: 'list',
         loadComponent: () =>
-          import('./event-definition-table.component').then(
+          import('./event-definition-list.component').then(
             (m) => m.EventDefinitionTableComponent,
           ),
       },

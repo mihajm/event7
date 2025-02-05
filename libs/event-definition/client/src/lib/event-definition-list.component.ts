@@ -1,12 +1,9 @@
-import { formatDate } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   inject,
-  LOCALE_ID,
 } from '@angular/core';
-import { injectDateFnsLocale } from '@e7/common/locale';
 import {
   CellDirective,
   createColumnHelper,
@@ -15,9 +12,12 @@ import {
   TableComponent,
 } from '@e7/common/table';
 import { EventDefinition } from '@e7/event-definition/shared';
-import { endOfYesterday, formatDistanceToNow, isBefore } from 'date-fns';
 import { ArchiveEventTriggerComponent } from './archive-event-definition-dialog.component';
 import { EditEventTriggerComponent } from './edit-event-definition-dialog.component';
+import {
+  EventDefinitionCardsComponent,
+  injectDisplayDate,
+} from './event-definition-cards.component';
 import { EventDefinitionTypeStore } from './event-definition-type.store';
 import { EventDefinitionStore } from './event-definition.store';
 import { EventPriorityBadgeComponent } from './event-priority-badge.component';
@@ -28,24 +28,6 @@ import {
 import { injectNamespaceT } from './locale';
 
 const col = createColumnHelper<EventDefinition>();
-
-const yesterday = endOfYesterday();
-
-function injectDisplayDate() {
-  const locale = inject(LOCALE_ID);
-  const dateFnsLocale = injectDateFnsLocale();
-
-  return (val?: string | Date) => {
-    if (!val) return '';
-    const date = new Date(val);
-
-    if (isBefore(date, yesterday)) return formatDate(date, 'medium', locale);
-    return formatDistanceToNow(date, {
-      locale: dateFnsLocale,
-      addSuffix: true,
-    });
-  };
-}
 
 function injectDisplayType() {
   const t = injectNamespaceT();
@@ -169,6 +151,7 @@ function createState() {
     EditEventTriggerComponent,
     EventStatusBadgeComponent,
     EventPriorityBadgeComponent,
+    EventDefinitionCardsComponent,
   ],
   providers: [
     provideTableLocalization(() => {
@@ -179,20 +162,24 @@ function createState() {
     }),
   ],
   template: `
-    <app-table [state]="state">
-      <app-event-priority-badge
-        *appCell="'priority'; let cell"
-        [priority]="cell.source().priority"
-      />
-      <app-event-status-badge
-        *appCell="'status'; let cell"
-        [status]="cell.source().status"
-      />
-      <div *appCell="'actions'; let cell">
-        <app-edit-event-trigger [state]="cell.source()" />
-        <app-archive-event-trigger [state]="cell.source()" />
-      </div>
-    </app-table>
+    @if (store.mobile()) {
+      <app-event-definition-cards [state]="state" />
+    } @else {
+      <app-table [state]="state">
+        <app-event-priority-badge
+          *appCell="'priority'; let cell"
+          [priority]="cell.source().priority"
+        />
+        <app-event-status-badge
+          *appCell="'status'; let cell"
+          [status]="cell.source().status"
+        />
+        <div *appCell="'actions'; let cell">
+          <app-edit-event-trigger [state]="cell.source()" />
+          <app-archive-event-trigger [state]="cell.source()" />
+        </div>
+      </app-table>
+    }
   `,
   styles: `
     :host {
@@ -203,4 +190,5 @@ function createState() {
 })
 export class EventDefinitionTableComponent {
   protected readonly state = createState();
+  protected readonly store = inject(EventDefinitionStore);
 }
