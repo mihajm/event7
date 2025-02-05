@@ -218,6 +218,10 @@ export class EventDefinitionStore {
           valueType: 'string',
         },
       },
+      sort: {
+        id: 'createdAt',
+        direction: 'desc',
+      },
     },
     {
       key: 'EVENT_DEFINITIONS_TABLE',
