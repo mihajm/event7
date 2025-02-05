@@ -14,7 +14,7 @@ import {
 import { createStringState, StringState } from '@e7/common/form';
 import { injectSharedT } from '@e7/common/locale';
 import { entries } from '@e7/common/object';
-import { derived } from '@e7/common/reactivity';
+import { derived, DerivedSignal } from '@e7/common/reactivity';
 import { CellState } from './cell.component';
 import { ColumnDef } from './column';
 import {
@@ -56,6 +56,8 @@ export type TableStateValue = {
   columnFilters?: ColumnFiltersValue;
   pagination?: PaginationValue;
   globalFilter?: string | null;
+  columnVisibility?: Record<string, boolean | undefined>;
+  columnOrder?: string[];
 };
 
 export type TableOptions<T> = {
@@ -67,16 +69,21 @@ export type TableOptions<T> = {
 export type TableState<T> = {
   header: {
     row: HeaderRowState;
+    globalFilter: StringState<TableStateValue>;
+    hasFilters: Signal<boolean>;
+    clearFilters: () => void;
   };
   body: {
     rows: Signal<RowState<T>[]>;
   };
+  columnVisibility: DerivedSignal<
+    TableStateValue,
+    Record<string, boolean | undefined>
+  >;
+  columnOrder: DerivedSignal<TableStateValue, string[]>;
   columnFilters: ColumnFiltersState;
-  globalFilter: StringState<TableStateValue>;
   sort: SortState;
   pagination: PaginationState;
-  hasFilters: Signal<boolean>;
-  clearFilters: () => void;
 };
 
 export function injectCreateTableState() {
@@ -91,6 +98,30 @@ export function injectCreateTableState() {
     const ds = computed(() => source());
     const length = computed(() => ds()?.length ?? 0);
 
+    const { fallbackVisibility, fallbackOrder } = options.columns.reduce(
+      (acc, c) => {
+        acc.fallbackVisibility[c.name] = true;
+        acc.fallbackOrder.push(c.name);
+        return acc;
+      },
+      {
+        fallbackVisibility: {} as Record<string, boolean | undefined>,
+        fallbackOrder: [] as string[],
+      },
+    );
+
+    const columnVisibility = derived(state, {
+      from: (v) => v.columnVisibility ?? fallbackVisibility,
+      onChange: (next) =>
+        state.update((cur) => ({ ...cur, columnVisibility: next })),
+    });
+
+    const columnOrder = derived(state, {
+      from: (v) => v.columnOrder ?? fallbackOrder,
+      onChange: (next) =>
+        state.update((cur) => ({ ...cur, columnOrder: next })),
+    });
+
     const sort = createSortState(
       derived(state, {
         from: (v) => v.sort ?? null,
@@ -103,7 +134,12 @@ export function injectCreateTableState() {
     const rows = computed(() =>
       Array.from({ length: length() }).map((_, i) => {
         const state = computed(() => ds()?.[i]);
-        return createRowState(options.columns, state);
+        return createRowState(
+          options.columns,
+          state,
+          columnOrder,
+          columnVisibility,
+        );
       }),
     );
 
@@ -148,14 +184,23 @@ export function injectCreateTableState() {
 
     return {
       header: {
-        row: headerFactory(options.columns, sort, columnFilterState),
+        row: headerFactory(
+          options.columns,
+          sort,
+          columnFilterState,
+          columnOrder,
+          columnVisibility,
+        ),
+        globalFilter,
+        hasFilters,
+        clearFilters,
       },
       body: {
         rows,
       },
       sort,
+      columnVisibility,
       columnFilters: columnFilterState,
-      globalFilter,
       pagination: paginationFactory(
         derived(state, {
           from: (v) => v.pagination ?? { page: 0, size: 10 },
@@ -165,8 +210,8 @@ export function injectCreateTableState() {
         length,
         options.pagination,
       ),
-      hasFilters,
-      clearFilters,
+
+      columnOrder,
     };
   };
 }
@@ -199,11 +244,7 @@ export class CellDirective {
   ],
   template: `
     <header>
-      <app-table-toolbar
-        [globalFilter]="state().globalFilter"
-        [hasFilters]="state().hasFilters()"
-        (clearFilters)="state().clearFilters()"
-      />
+      <app-table-toolbar [state]="state().header" />
     </header>
     <div class="table-container">
       <div class="table">

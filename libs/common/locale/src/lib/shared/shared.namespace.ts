@@ -39,6 +39,16 @@ const ns = createNamespace('shared', {
       fromTo: '{range} of {total}',
       perPage: '{items} per page',
     },
+    order: {
+      moveLeft: 'Move left',
+      moveRight: 'Move right',
+      moveToStart: 'Move to start',
+      moveToEnd: 'Move to end',
+      order: 'Order',
+    },
+    visibility: {
+      hideColumn: 'Hide column',
+    },
   },
   validation: {
     general: {

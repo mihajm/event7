@@ -39,6 +39,16 @@ export default createSharedTranslation('sl-SI', {
       fromTo: '{range} od {total}',
       perPage: '{items} na stran',
     },
+    order: {
+      moveLeft: 'Premakni levo',
+      moveRight: 'Premakni desno',
+      moveToStart: 'Premakni na začetek',
+      moveToEnd: 'Premakni na konec',
+      order: 'Vrstni red',
+    },
+    visibility: {
+      hideColumn: 'Skrij stolpec',
+    },
   },
   validation: {
     general: {

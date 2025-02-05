@@ -9,7 +9,7 @@ import { TableState } from './table.component';
   imports: [RowComponent, HeaderCellComponent],
   template: `
     <app-row>
-      @for (col of state().row.columns(); track col.id) {
+      @for (col of state().row.visibleColumns(); track col.id) {
         <app-header-cell [state]="col" />
       }
     </app-row>

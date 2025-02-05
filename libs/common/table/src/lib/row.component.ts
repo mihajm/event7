@@ -5,38 +5,70 @@ import {
   computed,
   Signal,
 } from '@angular/core';
+import { DerivedSignal } from '@e7/common/reactivity';
 import { v7 } from 'uuid';
 import { CellState, createCell } from './cell.component';
 import { ColumnDef } from './column';
 import {
   ColumnFiltersState,
-  ColumnFiltersValue,
   HeaderCellState,
   injectCreateHeaderCell,
 } from './header-cell.component';
 import { SortState } from './sort';
+import { TableStateValue } from './table.component';
 
 export type RowState<T> = {
   id: string;
   source: Signal<T>;
   columns: Signal<CellState<T, any>[]>;
+  visibleColumns: Signal<CellState<T, any>[]>;
 };
 
 export type HeaderRowState = {
   id: string;
   columns: Signal<HeaderCellState[]>;
+  visibleColumns: Signal<HeaderCellState[]>;
+  columnOrderState: DerivedSignal<TableStateValue, string[]>;
 };
 
 export function createRowState<T>(
   defs: ColumnDef<T, any>[],
   source: Signal<T>,
+  columnOrderState: DerivedSignal<TableStateValue, string[]>,
+  columnVisibilityState: DerivedSignal<
+    TableStateValue,
+    Record<string, boolean | undefined>
+  >,
 ): RowState<T> {
+  const columns = computed(() =>
+    defs.map((def) =>
+      createCell(
+        def.cell,
+        source,
+        def.shared,
+        columnVisibilityState,
+        columnOrderState,
+      ),
+    ),
+  );
+
+  const columnMap = computed(
+    () => new Map(columns().map((c) => [c.column.name, c])),
+  );
+
+  const orderedColumns = computed(() => {
+    const map = columnMap();
+
+    return columnOrderState()
+      .map((name) => map.get(name) ?? null)
+      .filter((v) => v !== null);
+  });
+
   return {
     id: v7(),
     source,
-    columns: computed(() =>
-      defs.map((def) => createCell(def.cell, source, def.shared)),
-    ),
+    columns,
+    visibleColumns: computed(() => orderedColumns().filter((c) => c.show())),
   };
 }
 
@@ -47,21 +79,42 @@ export function injectCreateHeaderRowState() {
     defs: ColumnDef<T, any>[],
     sort: SortState,
     columnFilters: ColumnFiltersState,
-    onColumnFiltersChange?: (filters: ColumnFiltersValue) => void,
+    columnOrderState: DerivedSignal<TableStateValue, string[]>,
+    columnVisibilityState: DerivedSignal<
+      TableStateValue,
+      Record<string, boolean | undefined>
+    >,
   ): HeaderRowState => {
-    return {
-      id: v7(),
-      columns: computed(() =>
-        defs.map((def) =>
-          createCell(
-            def.header,
-            def.shared,
-            sort,
-            columnFilters,
-            onColumnFiltersChange,
-          ),
+    const columns = computed(() =>
+      defs.map((def) =>
+        createCell(
+          def.header,
+          def.shared,
+          sort,
+          columnFilters,
+          columnVisibilityState,
+          columnOrderState,
         ),
       ),
+    );
+
+    const columnMap = computed(
+      () => new Map(columns().map((c) => [c.column.name, c])),
+    );
+
+    const orderedColumns = computed(() => {
+      const map = columnMap();
+
+      return columnOrderState()
+        .map((name) => map.get(name) ?? null)
+        .filter((v) => v !== null);
+    });
+
+    return {
+      id: v7(),
+      columns,
+      visibleColumns: computed(() => orderedColumns().filter((c) => c.show())),
+      columnOrderState,
     };
   };
 }

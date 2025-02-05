@@ -6,13 +6,17 @@ import {
   input,
   Signal,
   TemplateRef,
+  untracked,
 } from '@angular/core';
+import { DerivedSignal } from '@e7/common/reactivity';
 import { v7 } from 'uuid';
 import { SharedColumnState } from './column';
+import { TableStateValue } from './table.component';
 
 export type CellDef<T, U> = {
   value: (row: T) => U;
   equal?: (a: U, b: U) => boolean;
+  disableHide?: () => boolean;
 };
 
 export type CellState<T, U> = {
@@ -20,13 +24,24 @@ export type CellState<T, U> = {
   value: Signal<U>;
   column: SharedColumnState;
   source: Signal<T>;
+  show: Signal<boolean>;
+  isFirst: Signal<boolean>;
+  isLast: Signal<boolean>;
+  toggleVisibility: () => void;
+  disableHide: Signal<boolean>;
 };
 
 export function createCell<T, U>(
   def: CellDef<T, U>,
   source: Signal<T>,
   col: SharedColumnState,
+  columnVisibilityState: DerivedSignal<
+    TableStateValue,
+    Record<string, boolean | undefined>
+  >,
+  columnOrderState: DerivedSignal<TableStateValue, string[]>,
 ): CellState<T, U> {
+  const disableHide = computed(() => def.disableHide?.() ?? false);
   return {
     id: v7(),
     value: computed(() => def.value(source()), {
@@ -34,6 +49,17 @@ export function createCell<T, U>(
     }),
     column: col,
     source,
+    isFirst: computed(() => columnOrderState().at(0) === col.name),
+    isLast: computed(() => columnOrderState().at(-1) === col.name),
+    show: computed(() => columnVisibilityState()[col.name] ?? false),
+    disableHide,
+    toggleVisibility: () => {
+      if (untracked(disableHide)) return;
+      columnVisibilityState.update((cur) => ({
+        ...cur,
+        [col.name]: !cur[col.name],
+      }));
+    },
   };
 }
 

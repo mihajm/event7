@@ -16,7 +16,7 @@ import { TableState } from './table.component';
   template: `
     @for (row of state().rows(); track row.id; let odd = $odd) {
       <app-row [class.odd]="odd">
-        @for (col of row.columns(); track col.id) {
+        @for (col of row.visibleColumns(); track col.id) {
           <app-cell
             [state]="col"
             [template]="cellMap()[col.column.name] ?? null"

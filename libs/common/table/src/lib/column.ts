@@ -51,9 +51,11 @@ export function createColumnHelper<T>() {
       name,
       cell: {
         value: () => '',
+        disableHide: () => true,
       },
       header: {
         ...opt.header,
+        disableHide: () => true,
         label: opt.header?.label ?? (() => name),
       } as HeaderCellDef,
       type: 'display',

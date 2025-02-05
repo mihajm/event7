@@ -1,3 +1,4 @@
+import { moveItemInArray } from '@angular/cdk/drag-drop';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -97,6 +98,7 @@ export type HeaderCellDef<TFilter extends FilterValue = FilterValue> = {
       display?: (v: TFilter['value'] | null) => string;
     };
   };
+  disableHide?: () => boolean;
 };
 
 type ColumnFilterStateChildren<T extends FilterValue> = {
@@ -112,6 +114,11 @@ type ColumnFilterState<T extends FilterValue = FilterValue> = FormGroupSignal<
 export type HeaderCellState = Omit<CellState<unknown, string>, 'source'> & {
   sort: SortState;
   filter: ColumnFilterState;
+  hideColumn: () => void;
+  moveLeft: () => void;
+  moveRight: () => void;
+  moveToStart: () => void;
+  moveToEnd: () => void;
 };
 
 function createMatcherTranslator(t: SharedTranslator) {
@@ -179,7 +186,6 @@ function injectCreateHeaderFilter() {
       values: () => FilterValue['value'][];
       display?: (v: FilterValue['value'] | null) => string;
     },
-    onColumnFilterChange?: (filters: ColumnFiltersValue) => void,
   ): ColumnFilterState => {
     const initialState = filter ?? {
       valueType: 'string',
@@ -193,7 +199,6 @@ function injectCreateHeaderFilter() {
       from: (v) => v[name] ?? initialState,
       onChange: (next) => {
         columnFiltersState.update((cur) => ({ ...cur, [name]: next }));
-        onColumnFilterChange?.(untracked(columnFiltersState));
       },
     }) as unknown as DerivedSignal<ColumnFiltersState, ThisFilter>;
 
@@ -303,8 +308,13 @@ export function injectCreateHeaderCell() {
     col: SharedColumnState,
     sort: SortState,
     columnFiltersState: ColumnFiltersState,
-    onColumnFilterChange?: (filters: ColumnFiltersValue) => void,
+    columnVisibilityState: DerivedSignal<
+      TableStateValue,
+      Record<string, boolean | undefined>
+    >,
+    columnOrderState: DerivedSignal<TableStateValue, string[]>,
   ): HeaderCellState => {
+    const disableHide = computed(() => def.disableHide?.() ?? false);
     const label = computed(() => def.label() ?? '');
     return {
       id: v7(),
@@ -317,8 +327,60 @@ export function injectCreateHeaderCell() {
         col.name,
         { ...def.filter, value: null } as FilterValue,
         def.filter?.options,
-        onColumnFilterChange,
       ),
+      disableHide,
+      isFirst: computed(() => columnOrderState().at(0) === col.name),
+      isLast: computed(() => columnOrderState().at(-1) === col.name),
+      show: computed(() => columnVisibilityState()[col.name] ?? false),
+      hideColumn: () => {
+        if (untracked(disableHide)) return;
+        columnVisibilityState.update((cur) => ({ ...cur, [col.name]: false }));
+      },
+      toggleVisibility: () => {
+        if (untracked(disableHide)) return;
+        columnVisibilityState.update((cur) => ({
+          ...cur,
+          [col.name]: !cur[col.name],
+        }));
+      },
+      moveLeft: () => {
+        columnOrderState.update((cur) => {
+          const idx = cur.indexOf(col.name);
+          if (idx === -1 || idx === 0) return cur;
+          const next = [...cur];
+          moveItemInArray(next, idx, idx - 1);
+          return next;
+        });
+      },
+      moveRight: () => {
+        columnOrderState.update((cur) => {
+          const idx = cur.indexOf(col.name);
+          if (idx === -1 || idx === cur.length - 1) return cur;
+          const next = [...cur];
+          moveItemInArray(next, idx, idx + 1);
+          return next;
+        });
+      },
+      moveToStart: () => {
+        columnOrderState.update((cur) => {
+          const idx = cur.indexOf(col.name);
+          if (idx === -1 || idx === 0) return cur;
+          const next = [...cur];
+          next.splice(idx, 1);
+          next.unshift(col.name);
+          return next;
+        });
+      },
+      moveToEnd: () => {
+        columnOrderState.update((cur) => {
+          const idx = cur.indexOf(col.name);
+          if (idx === -1 || idx === cur.length - 1) return cur;
+          const next = [...cur];
+          next.splice(idx, 1);
+          next.push(col.name);
+          return next;
+        });
+      },
     };
   };
 }
@@ -356,6 +418,32 @@ export function injectCreateHeaderCell() {
     <mat-menu #cellMenu>
       <button type="button" mat-menu-item [matMenuTriggerFor]="matcherMenu">
         {{ matcher }}
+      </button>
+      <button type="button" mat-menu-item [matMenuTriggerFor]="orderMenu">
+        {{ order }}
+      </button>
+      <button
+        type="button"
+        mat-menu-item
+        (click)="state().hideColumn()"
+        [disabled]="state().disableHide()"
+      >
+        {{ hideColumn }}
+      </button>
+    </mat-menu>
+
+    <mat-menu #orderMenu>
+      <button type="button" mat-menu-item (click)="state().moveToStart()">
+        {{ moveToStart }}
+      </button>
+      <button type="button" mat-menu-item (click)="state().moveLeft()">
+        {{ moveLeft }}
+      </button>
+      <button type="button" mat-menu-item (click)="state().moveRight()">
+        {{ moveRight }}
+      </button>
+      <button type="button" mat-menu-item (click)="state().moveToEnd()">
+        {{ moveToEnd }}
       </button>
     </mat-menu>
 
@@ -484,6 +572,12 @@ export class HeaderCellComponent {
   readonly state = input.required<HeaderCellState>();
 
   protected readonly matcher = this.t('shared.table.filter.matcher');
+  protected readonly hideColumn = this.t('shared.table.visibility.hideColumn');
+  protected readonly order = this.t('shared.table.order.order');
+  protected readonly moveLeft = this.t('shared.table.order.moveLeft');
+  protected readonly moveRight = this.t('shared.table.order.moveRight');
+  protected readonly moveToStart = this.t('shared.table.order.moveToStart');
+  protected readonly moveToEnd = this.t('shared.table.order.moveToEnd');
 
   readonly right = computed(() => this.state().column.align() === 'right');
 
