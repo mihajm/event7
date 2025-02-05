@@ -4,16 +4,5 @@
   "sourceRoot": "libs/event-definition/shared/src",
   "projectType": "library",
   "tags": [],
-  "targets": {
-    "build": {
-      "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/event-definition/shared",
-        "main": "libs/event-definition/shared/src/index.ts",
-        "tsConfig": "libs/event-definition/shared/tsconfig.lib.json",
-        "assets": ["libs/event-definition/shared/*.md"]
-      }
-    }
-  }
+  "targets": {}
 }
