@@ -34,11 +34,6 @@
         }
       }
     },
-    "test": {
-      "options": {
-        "passWithNoTests": true
-      }
-    },
     "migrate": {
       "executor": "nx:run-commands",
       "options": {
