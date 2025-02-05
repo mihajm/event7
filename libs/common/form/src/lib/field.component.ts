@@ -1,9 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  inject,
   input,
   ViewEncapsulation,
 } from '@angular/core';
+import {
+  MAT_FORM_FIELD_DEFAULT_OPTIONS,
+  SubscriptSizing,
+} from '@angular/material/form-field';
 import { DateFieldComponent, DateState } from './date-field.component';
 import { NumberFieldComponent, NumberState } from './number-field.component';
 import { SelectFieldComponent, SelectState } from './select-field.component';
@@ -31,16 +36,28 @@ export type FieldState<T, TParent = undefined> =
   template: `
     @switch (state().type) {
       @case ('string') {
-        <app-string-field [state]="$any(state())" />
+        <app-string-field
+          [subscriptSizing]="subscriptSizing()"
+          [state]="$any(state())"
+        />
       }
       @case ('date') {
-        <app-date-field [state]="$any(state())" />
+        <app-date-field
+          [subscriptSizing]="subscriptSizing()"
+          [state]="$any(state())"
+        />
       }
       @case ('number') {
-        <app-number-field [state]="$any(state())" />
+        <app-number-field
+          [subscriptSizing]="subscriptSizing()"
+          [state]="$any(state())"
+        />
       }
       @case ('select') {
-        <app-select-field [state]="$any(state())" />
+        <app-select-field
+          [subscriptSizing]="subscriptSizing()"
+          [state]="$any(state())"
+        />
       }
     }
   `,
@@ -52,4 +69,9 @@ export type FieldState<T, TParent = undefined> =
 })
 export class FieldComponent<T, TParent = undefined> {
   readonly state = input.required<FieldState<T, TParent>>();
+
+  readonly subscriptSizing = input<SubscriptSizing>(
+    inject(MAT_FORM_FIELD_DEFAULT_OPTIONS, { optional: true })
+      ?.subscriptSizing ?? 'fixed',
+  );
 }

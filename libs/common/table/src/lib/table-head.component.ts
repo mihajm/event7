@@ -16,6 +16,7 @@ import { TableState } from './table.component';
   `,
   styles: `
     :host {
+      padding-top: 10px;
       position: sticky;
       top: 0;
       z-index: 100;

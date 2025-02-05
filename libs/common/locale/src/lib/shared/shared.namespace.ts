@@ -17,6 +17,17 @@ const ns = createNamespace('shared', {
   areYouSure: 'Are you sure?',
   editItem: 'Edit {item}',
   table: {
+    filter: {
+      eq: 'Equals',
+      neq: 'Not equals',
+      ilike: 'Contains',
+      nilike: 'Not contains',
+      gt: 'Greater than',
+      lt: 'Less than',
+      gte: 'Greater or equals',
+      lte: 'Less or equals',
+      matcher: 'Matcher',
+    },
     pagination: {
       firstPage: 'First page',
       lastPage: 'Last page',

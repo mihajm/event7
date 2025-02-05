@@ -7,7 +7,6 @@ import {
   type ApplicationConfig,
   provideExperimentalZonelessChangeDetection,
 } from '@angular/core';
-import { provideDateFnsAdapter } from '@angular/material-date-fns-adapter';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { dedupeRequestsInterceptor } from '@e7/common/http';
 import { provideLocalizedRouter } from '@e7/common/locale';
@@ -35,6 +34,5 @@ export const appConfig: ApplicationConfig = {
       withFetch(),
       withInterceptors([dedupeRequestsInterceptor()]),
     ),
-    provideDateFnsAdapter(),
   ],
 };

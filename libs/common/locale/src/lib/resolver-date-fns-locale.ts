@@ -1,5 +1,7 @@
 import { registerLocaleData } from '@angular/common';
 import { inject, InjectionToken, Provider } from '@angular/core';
+import { provideDateFnsAdapter } from '@angular/material-date-fns-adapter';
+import { MAT_DATE_LOCALE } from '@angular/material/core';
 import {
   ActivatedRoute,
   ActivatedRouteSnapshot,
@@ -13,7 +15,7 @@ const DATE_FNS_LOCALES: Record<
   SupportedLocale,
   (() => Promise<Locale>) | undefined
 > = {
-  'en-US': undefined,
+  'en-US': () => import('date-fns/locale/en-US').then((m) => m.enUS),
   'sl-SI': () => import('date-fns/locale/sl').then((m) => m.sl),
 };
 
@@ -57,20 +59,30 @@ export const DATE_FN_RESOLVERS: Record<string, ResolveFn<Locale | void>> = {
   [resolverKey]: resolveDateFnsLocale,
 };
 
-const token = new InjectionToken<Locale | undefined>('EVENT7_DATE_FNS_LOCALE');
+const token = new InjectionToken<Locale>('EVENT7_DATE_FNS_LOCALE');
 
-export function provideDateFnsLocale(): Provider {
-  return {
-    provide: token,
-    useFactory: (route: ActivatedRoute) => {
-      const data = route.snapshot.data;
+export function provideDateFnsLocale(): Provider[] {
+  return [
+    {
+      provide: token,
+      useFactory: (route: ActivatedRoute) => {
+        const data = route.snapshot.data;
 
-      if (!data || !data[resolverKey]) return;
+        if (!data || !data[resolverKey]) return;
 
-      return data[resolverKey] as Locale | undefined;
+        return data[resolverKey] as Locale;
+      },
+      deps: [ActivatedRoute],
     },
-    deps: [ActivatedRoute],
-  };
+    {
+      provide: MAT_DATE_LOCALE,
+      useFactory: (locale: Locale) => {
+        return locale;
+      },
+      deps: [token],
+    },
+    provideDateFnsAdapter(),
+  ];
 }
 
 export function injectDateFnsLocale() {

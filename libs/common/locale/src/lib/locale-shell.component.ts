@@ -5,7 +5,6 @@ import {
   inject,
   LOCALE_ID,
 } from '@angular/core';
-import { MAT_DATE_LOCALE } from '@angular/material/core';
 import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { routeParam } from '@e7/common/router';
 import { isSupportedLocale } from './inject-supported-locale';
@@ -29,12 +28,7 @@ import {
       },
       deps: [ActivatedRoute],
     },
-    {
-      provide: MAT_DATE_LOCALE,
-      useFactory: (locale: string) => locale,
-      deps: [LOCALE_ID],
-    },
-    provideDateFnsLocale(),
+    ...provideDateFnsLocale(),
   ],
   styles: `
     :host {

@@ -8,7 +8,12 @@ import {
 import { v7 } from 'uuid';
 import { CellState, createCell } from './cell.component';
 import { ColumnDef } from './column';
-import { createHeaderCell, HeaderCellState } from './header-cell.component';
+import {
+  ColumnFiltersState,
+  ColumnFiltersValue,
+  HeaderCellState,
+  injectCreateHeaderCell,
+} from './header-cell.component';
 import { SortState } from './sort';
 
 export type RowState<T> = {
@@ -35,15 +40,29 @@ export function createRowState<T>(
   };
 }
 
-export function createHeaderRowState<T>(
-  defs: ColumnDef<T, any>[],
-  sort: SortState,
-): HeaderRowState {
-  return {
-    id: v7(),
-    columns: computed(() =>
-      defs.map((def) => createHeaderCell(def.header, def.shared, sort)),
-    ),
+export function injectCreateHeaderRowState() {
+  const createCell = injectCreateHeaderCell();
+
+  return <T>(
+    defs: ColumnDef<T, any>[],
+    sort: SortState,
+    columnFilters: ColumnFiltersState,
+    onColumnFiltersChange?: (filters: ColumnFiltersValue) => void,
+  ): HeaderRowState => {
+    return {
+      id: v7(),
+      columns: computed(() =>
+        defs.map((def) =>
+          createCell(
+            def.header,
+            def.shared,
+            sort,
+            columnFilters,
+            onColumnFiltersChange,
+          ),
+        ),
+      ),
+    };
   };
 }
 

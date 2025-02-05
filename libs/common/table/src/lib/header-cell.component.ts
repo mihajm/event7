@@ -2,33 +2,288 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   input,
+  LOCALE_ID,
+  Signal,
+  untracked,
 } from '@angular/core';
 import { MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import {
+  createDateState,
+  createNumberState,
+  createSelectState,
+  createStringState,
+  FieldComponent,
+  FieldState,
+  formGroup,
+  FormGroupSignal,
+  SelectState,
+} from '@e7/common/form';
+import { injectSharedT, SharedTranslator } from '@e7/common/locale';
+import { entries } from '@e7/common/object';
+import { derived, DerivedSignal, MutableSignal } from '@e7/common/reactivity';
 import { v7 } from 'uuid';
 import { CellState } from './cell.component';
 import { SharedColumnState } from './column';
 import { SortState, SortValue } from './sort';
 
-export type HeaderCellDef = {
-  label: () => string;
+const GENERIC_FILTER_MATCHERS = ['eq', 'neq'] as const;
+const STRING_FILTER_MATCHERS = [
+  ...GENERIC_FILTER_MATCHERS,
+  'ilike',
+  'nilike',
+] as const;
+const NUMBER_FILTER_MATCHERS = [
+  ...GENERIC_FILTER_MATCHERS,
+  'gt',
+  'lt',
+  'gte',
+  'lte',
+] as const;
+
+type StringFilterMatcher = (typeof STRING_FILTER_MATCHERS)[number];
+
+type NumberFilterMatcher = (typeof NUMBER_FILTER_MATCHERS)[number];
+type DateFilterMatcher = NumberFilterMatcher;
+
+type StringFilterValue = {
+  value: string | null;
+  valueType: 'string';
+  matcher: StringFilterMatcher;
 };
+
+type NumberFilterValue = {
+  value: number | null;
+  valueType: 'number';
+  matcher: NumberFilterMatcher;
+};
+
+type DateFilterValue = {
+  value: Date | null;
+  valueType: 'date';
+  matcher: DateFilterMatcher;
+};
+
+type FilterValue = StringFilterValue | NumberFilterValue | DateFilterValue;
+
+const matchers = {
+  string: STRING_FILTER_MATCHERS,
+  number: NUMBER_FILTER_MATCHERS,
+  date: NUMBER_FILTER_MATCHERS,
+} satisfies Record<FilterValue['valueType'], readonly FilterValue['matcher'][]>;
+
+export type ColumnFiltersValue = Record<string, FilterValue>;
+
+export type ColumnFiltersState = MutableSignal<ColumnFiltersValue>;
+
+export type HeaderCellDef<TFilter extends FilterValue = FilterValue> = {
+  label: () => string;
+  filter?: Omit<TFilter, 'value'> & {
+    options?: {
+      values: () => TFilter['value'][];
+      display?: (v: TFilter['value'] | null) => string;
+    };
+  };
+};
+
+type ColumnFilterStateChildren<T extends FilterValue> = {
+  matcher: SelectState<T['matcher'], T>;
+  value: FieldState<T['value'], T>;
+};
+
+type ColumnFilterState<T extends FilterValue = FilterValue> = FormGroupSignal<
+  T,
+  ColumnFilterStateChildren<T>
+>;
 
 export type HeaderCellState = Omit<CellState<unknown, string>, 'source'> & {
   sort: SortState;
+  filter: ColumnFilterState;
 };
 
-export function createHeaderCell(
-  def: HeaderCellDef,
-  col: SharedColumnState,
-  sort: SortState,
-): HeaderCellState {
-  return {
-    id: v7(),
-    value: computed(() => def.label?.() ?? ''),
-    column: col,
-    sort,
+function createMatcherTranslator(t: SharedTranslator) {
+  const translations = {
+    eq: t('shared.table.filter.eq'),
+    neq: t('shared.table.filter.neq'),
+    ilike: t('shared.table.filter.ilike'),
+    nilike: t('shared.table.filter.nilike'),
+    gt: t('shared.table.filter.gt'),
+    lt: t('shared.table.filter.lt'),
+    gte: t('shared.table.filter.gte'),
+    lte: t('shared.table.filter.lte'),
+  } satisfies Record<FilterValue['matcher'], string | undefined>;
+
+  return (value: FilterValue['matcher']): string => {
+    return translations[value] ?? value;
+  };
+}
+
+export function toServerFilters(
+  filters?: ColumnFiltersValue,
+): Record<string, string | number | Date | string[] | number[] | Date[]> {
+  if (!filters) return {};
+
+  const parsed: Record<
+    string,
+    string | number | Date | string[] | number[] | Date[]
+  > = {};
+
+  for (const [name, value] of entries(filters)) {
+    if (!name || !value.value) continue;
+    const key = `${name}.${value.matcher}`;
+    parsed[key] = value.value;
+  }
+
+  return parsed;
+}
+
+function injectCreateHeaderFilter() {
+  const locale = inject(LOCALE_ID);
+  const t = injectSharedT();
+  const matcherTranslator = createMatcherTranslator(t);
+
+  return (
+    label: Signal<string>,
+    columnFiltersState: ColumnFiltersState,
+    name: string,
+    filter?: FilterValue,
+    options?: {
+      values: () => FilterValue['value'][];
+      display?: (v: FilterValue['value'] | null) => string;
+    },
+    onColumnFilterChange?: (filters: ColumnFiltersValue) => void,
+  ): ColumnFilterState => {
+    const initialState = filter ?? {
+      valueType: 'string',
+      matcher: 'eq',
+      value: null,
+    };
+
+    type ThisFilter = typeof initialState;
+
+    const baseState = derived(columnFiltersState, {
+      from: (v) => v[name] ?? initialState,
+      onChange: (next) => {
+        columnFiltersState.mutate((cur) => {
+          cur[name] = next;
+          return cur;
+        });
+        onColumnFilterChange?.(untracked(columnFiltersState));
+      },
+    }) as unknown as DerivedSignal<ColumnFiltersState, ThisFilter>;
+
+    const matcher = createSelectState(
+      derived(baseState, {
+        from: (v) => v.matcher,
+        onChange: (next) => {
+          baseState.update((cur) => ({ ...cur, matcher: next }) as ThisFilter);
+        },
+      }),
+      t,
+      {
+        options: () =>
+          (matchers[initialState.valueType] ??
+            GENERIC_FILTER_MATCHERS ??
+            []) as unknown as ThisFilter['matcher'][],
+        display: () => (v) => (v ? matcherTranslator(v) : ''),
+      },
+    );
+
+    const createValueState = (): FieldState<
+      ThisFilter['value'],
+      ThisFilter
+    > => {
+      const valueDerivation = derived(baseState, {
+        from: (v) => v.value,
+        onChange: (next) =>
+          baseState.update((cur) => ({ ...cur, value: next }) as ThisFilter),
+      });
+
+      if (options)
+        return createSelectState(valueDerivation, t, {
+          options: () => options.values() ?? [],
+          display: () => options.display as (v: ThisFilter['value']) => string,
+          label,
+        });
+
+      switch (initialState.valueType) {
+        case 'string':
+          return createStringState(
+            valueDerivation as DerivedSignal<FilterValue, string>,
+            t,
+            {
+              label,
+              disable: () => !filter,
+            },
+          );
+        case 'number':
+          return createNumberState(
+            valueDerivation as DerivedSignal<FilterValue, number>,
+            t,
+            {
+              label,
+            },
+          );
+        case 'date':
+          return createDateState(
+            valueDerivation as DerivedSignal<FilterValue, Date>,
+            locale,
+            t,
+            {
+              label,
+            },
+          );
+        default:
+          return createStringState(
+            valueDerivation as DerivedSignal<FilterValue, string>,
+            t,
+            {
+              label,
+              disable: () => true,
+            },
+          );
+      }
+    };
+
+    const children = {
+      matcher,
+      value: createValueState(),
+    };
+
+    return formGroup<ThisFilter, ColumnFilterStateChildren<ThisFilter>>(
+      baseState,
+      children,
+    );
+  };
+}
+
+export function injectCreateHeaderCell() {
+  const factory = injectCreateHeaderFilter();
+  return (
+    def: HeaderCellDef,
+    col: SharedColumnState,
+    sort: SortState,
+    columnFiltersState: ColumnFiltersState,
+    onColumnFilterChange?: (filters: ColumnFiltersValue) => void,
+  ): HeaderCellState => {
+    const label = computed(() => def.label() ?? '');
+    return {
+      id: v7(),
+      value: label,
+      column: col,
+      sort,
+      filter: factory(
+        label,
+        columnFiltersState,
+        col.name,
+        { ...def.filter, value: null } as FilterValue,
+        def.filter?.options,
+        onColumnFilterChange,
+      ),
+    };
   };
 }
 
@@ -38,24 +293,64 @@ export function createHeaderCell(
   host: {
     '[class.right]': 'right()',
   },
-  imports: [MatIconButton, MatIcon],
+  imports: [MatIconButton, MatIcon, FieldComponent, MatMenuModule],
   template: `
-    <div>
-      <span>{{ state().value() }}</span>
-      <button
-        type="button"
-        mat-icon-button
-        [disabled]="state().column.disableSort()"
-        [class.active]="!!sortState()"
-        (click)="state().sort.set(nextSort())"
-      >
-        <mat-icon>{{ sortIcon() }}</mat-icon>
-      </button>
+    <div class="container">
+      <app-field
+        [state]="state().filter.children.value"
+        subscriptSizing="dynamic"
+      />
+      <div>
+        <button
+          type="button"
+          mat-icon-button
+          [disabled]="state().column.disableSort()"
+          [class.active]="!!sortState()"
+          (click)="state().sort.set(nextSort())"
+        >
+          <mat-icon>{{ sortIcon() }}</mat-icon>
+        </button>
+        <button type="button" mat-icon-button [matMenuTriggerFor]="cellMenu">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+      </div>
     </div>
+
+    <mat-menu #cellMenu>
+      <button type="button" mat-menu-item [matMenuTriggerFor]="matcherMenu">
+        {{ matcher }}
+      </button>
+    </mat-menu>
+
+    <mat-menu #matcherMenu>
+      @for (
+        matcher of state().filter.children.matcher.options();
+        track matcher.id
+      ) {
+        @let active = matcher.value === state().filter.children.matcher.value();
+        <button
+          type="button"
+          mat-menu-item
+          [disabled]="matcher.disabled()"
+          [class.active]="active"
+          (click)="state().filter.children.matcher.value.set(matcher.value)"
+        >
+          <span>{{ matcher.label() }}</span>
+
+          @if (active) {
+            <mat-icon>check</mat-icon>
+          } @else {
+            <mat-icon />
+          }
+        </button>
+      }
+    </mat-menu>
   `,
   styles: `
     :host {
-      padding: 0 16px;
+      display: contents;
+      text-align: inherit;
+
       background: inherit;
       border-bottom-color: var(
         --mat-table-row-item-outline-color,
@@ -74,7 +369,22 @@ export function createHeaderCell(
       flex: 1;
       min-width: 200px;
 
-      div {
+      div.container {
+        text-align: inherit;
+
+        ::ng-deep app-field {
+          text-align: inherit;
+          mat-form-field,
+          input,
+          label,
+          app-string-field,
+          app-date-field,
+          app-number-field,
+          app-select-field {
+            text-align: inherit;
+          }
+        }
+
         flex: 1;
         display: inline-flex;
         align-items: center;
@@ -99,7 +409,7 @@ export function createHeaderCell(
       }
 
       &:hover {
-        div button {
+        div.container button {
           opacity: 1;
         }
       }
@@ -107,16 +417,27 @@ export function createHeaderCell(
       &.right {
         justify-content: flex-end;
 
-        div {
+        div.container {
           justify-content: flex-start;
           flex-direction: row-reverse;
         }
       }
     }
+
+    button[mat-menu-item].active {
+      color: var(--mat-sys-primary, #005cbb);
+
+      mat-icon {
+        color: var(--mat-sys-primary, #005cbb);
+      }
+    }
   `,
 })
 export class HeaderCellComponent {
+  private readonly t = injectSharedT();
   readonly state = input.required<HeaderCellState>();
+
+  protected readonly matcher = this.t('shared.table.filter.matcher');
 
   readonly right = computed(() => this.state().column.align() === 'right');
 

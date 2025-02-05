@@ -11,9 +11,9 @@ export type ColumnDef<T, U> = {
 };
 
 type ColumnOptions = {
-  label?: () => string;
   align?: () => 'left' | 'right';
   disableSort?: () => boolean;
+  header?: Partial<HeaderCellDef>;
 };
 
 export type SharedColumnState = {
@@ -34,8 +34,9 @@ export function createColumnHelper<T>() {
         value: fn,
       },
       header: {
-        label: opt.label ?? (() => name),
-      },
+        ...opt.header,
+        label: opt.header?.label ?? (() => name),
+      } as HeaderCellDef,
       type: 'accessor',
       shared: {
         disableSort: computed(() => opt?.disableSort?.() ?? false),
@@ -52,8 +53,9 @@ export function createColumnHelper<T>() {
         value: () => '',
       },
       header: {
-        label: opt.label ?? (() => name),
-      },
+        ...opt.header,
+        label: opt.header?.label ?? (() => name),
+      } as HeaderCellDef,
       type: 'display',
       shared: {
         disableSort: computed(() => opt?.disableSort?.() ?? false),

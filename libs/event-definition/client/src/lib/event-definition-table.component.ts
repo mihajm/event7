@@ -19,6 +19,7 @@ import { EventDefinition } from '@e7/event-definition/shared';
 import { endOfYesterday, formatDistanceToNow, isBefore } from 'date-fns';
 import { ArchiveEventTriggerComponent } from './archive-event-definition-dialog.component';
 import { EditEventTriggerComponent } from './edit-event-definition-dialog.component';
+import { EventDefinitionTypeStore } from './event-definition-type.store';
 import { EventDefinitionStore } from './event-definition.store';
 import { injectNamespaceT } from './locale';
 
@@ -85,29 +86,71 @@ function injectColumns() {
   const date = injectDisplayDate();
   const status = injectDisplayStatus();
   const type = injectDisplayType();
+  const typeStore = inject(EventDefinitionTypeStore);
 
   return [
     col.accessor('name', (e) => e.name ?? '', {
-      label: () => t('eventDef.name'),
+      header: {
+        label: () => t('eventDef.name'),
+        filter: {
+          valueType: 'string',
+          matcher: 'ilike',
+        },
+      },
     }),
     col.accessor('status', (e) => status(e.status), {
-      label: () => t('eventDef.status'),
+      header: {
+        label: () => t('eventDef.status'),
+        filter: {
+          valueType: 'string',
+          matcher: 'eq',
+          options: {
+            values: () => ['active', 'archived', 'draft', 'ready'],
+            display: (v) => (v ? status(v as EventDefinition['status']) : ''),
+          },
+        },
+      },
     }),
     col.accessor('type', (e) => type(e.type), {
-      label: () => t('eventDef.type'),
+      header: {
+        label: () => t('eventDef.type'),
+        filter: {
+          valueType: 'string',
+          matcher: 'eq',
+          options: {
+            values: () => typeStore.types.value(),
+            display: (v) => (v ? type(v as EventDefinition['type']) : ''),
+          },
+        },
+      },
     }),
     col.accessor('priority', (e) => e.priority ?? 0, {
-      label: () => t('eventDef.priority'),
+      header: {
+        label: () => t('eventDef.priority'),
+        filter: {
+          valueType: 'number',
+          matcher: 'eq',
+        },
+      },
       align: () => 'right',
     }),
     col.accessor('createdAt', (e) => date(e.createdAt), {
-      label: () => t('eventDef.created'),
+      header: {
+        label: () => t('eventDef.created'),
+        filter: {
+          valueType: 'date',
+          matcher: 'eq',
+        },
+      },
     }),
     col.accessor('updatedAt', (e) => date(e.updatedAt), {
-      label: () => t('eventDef.updated'),
+      header: {
+        label: () => t('eventDef.updated'),
+        filter: { valueType: 'date', matcher: 'eq' },
+      },
     }),
     col.display('actions', {
-      label: () => t('eventDef.actions'),
+      header: { label: () => t('eventDef.actions') },
     }),
   ];
 }
@@ -137,6 +180,10 @@ function createState() {
             ...prev,
             sort: next,
           })),
+      },
+      columnFilters: {
+        onColumnFiltersChange: (next) =>
+          store.listState.update((cur) => ({ ...cur, columnFilters: next })),
       },
     },
     items,

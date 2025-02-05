@@ -17,6 +17,17 @@ export default createSharedTranslation('sl-SI', {
   areYouSure: 'Ali ste prepričani?',
   editItem: 'Uredi {item}',
   table: {
+    filter: {
+      eq: 'Enako',
+      neq: 'Ne enako',
+      ilike: 'Vsebuje',
+      nilike: 'Ne vsebuje',
+      gt: 'Več kot',
+      lt: 'Manj kot',
+      gte: 'Več ali enako',
+      lte: 'Manj ali enako',
+      matcher: 'Ujemanje',
+    },
     pagination: {
       firstPage: 'Prva stran',
       lastPage: 'Zadnja stran',

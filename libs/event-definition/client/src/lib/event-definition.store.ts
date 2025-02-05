@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { effect, inject, Injectable, untracked } from '@angular/core';
+import { computed, effect, inject, Injectable, untracked } from '@angular/core';
 import {
   extendedResource,
   InferedRequestLoaderParams,
@@ -8,7 +8,7 @@ import {
 import { removeEmptyKeys } from '@e7/common/object';
 import { stored } from '@e7/common/reactivity';
 import { injectApiUrl } from '@e7/common/settings';
-import { TableValue } from '@e7/common/table';
+import { TableValue, toServerFilters } from '@e7/common/table';
 import {
   CreateEventDefinitionDTO,
   EventDefinition,
@@ -35,6 +35,7 @@ function toSortParam(opt?: TableValue['sort']): string | undefined {
 function toListParams(opt?: TableValue) {
   return {
     ...toPaginationParams(opt?.pagination),
+    ...toServerFilters(opt?.columnFilters),
     sort: toSortParam(opt?.sort),
   };
 }
@@ -148,8 +149,18 @@ export class EventDefinitionStore {
     },
   );
 
+  private readonly isMobile = computed(() => false);
+
+  private readonly mobileOrDesktopState = computed((): TableValue => {
+    if (!this.isMobile()) return this.listState();
+
+    return {
+      pagination: this.listState().pagination,
+    };
+  });
+
   readonly definitions = extendedResource({
-    request: () => this.listState(),
+    request: () => this.mobileOrDesktopState(),
     loader: ({ request }) => this.svc.list(request),
     keepPrevious: true,
     fallback: {
@@ -165,7 +176,7 @@ export class EventDefinitionStore {
   constructor() {
     effect(() => {
       if (this.definitions.isLoading()) return;
-      const state = this.listState();
+      const state = this.mobileOrDesktopState();
       const { total } = this.definitions.value();
       const page = state.pagination?.page ?? 0;
       const size = state.pagination?.size ?? 10;

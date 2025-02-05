@@ -10,12 +10,17 @@ import {
   Signal,
   TemplateRef,
 } from '@angular/core';
+import { mutable } from '@e7/common/reactivity';
 import { CellState } from './cell.component';
 import { ColumnDef } from './column';
 import {
-  createHeaderRowState,
+  ColumnFiltersState,
+  ColumnFiltersValue,
+} from './header-cell.component';
+import {
   createRowState,
   HeaderRowState,
+  injectCreateHeaderRowState,
   RowState,
 } from './row.component';
 import { createSortState, SortOptions, SortState, SortValue } from './sort';
@@ -44,6 +49,7 @@ function toCellMap<
 
 export type TableValue = {
   sort?: SortValue;
+  columnFilters?: ColumnFiltersValue;
   pagination?: PaginationValue;
 };
 
@@ -52,6 +58,9 @@ export type TableOptions<T> = {
   initial?: TableValue;
   pagination?: PaginationOptions;
   sort?: SortOptions;
+  columnFilters?: {
+    onColumnFiltersChange?: (filters: ColumnFiltersValue) => void;
+  };
 };
 
 export type TableState<T> = {
@@ -61,13 +70,14 @@ export type TableState<T> = {
   body: {
     rows: Signal<RowState<T>[]>;
   };
+  columnFilters: ColumnFiltersState;
   sort: SortState;
   pagination: PaginationState;
 };
 
 export function injectCreateTableState() {
   const paginationFactory = injectCreatePaginationState();
-
+  const headerFactory = injectCreateHeaderRowState();
   return <T>(
     initial: TableValue | undefined,
     options: TableOptions<T>,
@@ -85,14 +95,22 @@ export function injectCreateTableState() {
       }),
     );
 
+    const columnFilterState = mutable(initial?.columnFilters ?? {});
+
     return {
       header: {
-        row: createHeaderRowState(options.columns, sort),
+        row: headerFactory(
+          options.columns,
+          sort,
+          columnFilterState,
+          options.columnFilters?.onColumnFiltersChange,
+        ),
       },
       body: {
         rows,
       },
       sort,
+      columnFilters: columnFilterState,
       pagination: paginationFactory(
         initial?.pagination,
         length,
