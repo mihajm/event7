@@ -149,6 +149,21 @@ function injectCache<T, R>(
 
 const FIVE_MINUTES = 1000 * 60 * 5;
 
+function hasSlowConnection() {
+  if (
+    'connection' in window.navigator &&
+    typeof window.navigator.connection === 'object' &&
+    !!window.navigator.connection &&
+    'effectiveType' in window.navigator.connection &&
+    typeof window.navigator.connection.effectiveType === 'string'
+  )
+    return window.navigator.connection.effectiveType.endsWith('2g');
+
+  return false;
+}
+
+const IS_SLOW_CONNECTION = hasSlowConnection();
+
 export function extendedResource<T, R, TCTX = void>(
   opt: UndefinedExtendedResourceOptions<T, R, TCTX>,
 ): UndefinedExtendedResourceRef<T, R>;
@@ -299,7 +314,7 @@ export function extendedResource<T, R, TCTX = void>(
     reload,
     set: (value: T | null | undefined) => res.set(value ?? undefined),
     prefetch: async (request: NoInfer<R>) => {
-      if (request === undefined || !opt.cache) return;
+      if (request === undefined || !opt.cache || IS_SLOW_CONNECTION) return;
 
       const key = cache.toString(request);
 
