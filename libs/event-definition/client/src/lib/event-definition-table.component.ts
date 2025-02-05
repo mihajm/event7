@@ -181,10 +181,10 @@ function createState() {
             sort: next,
           })),
       },
-      columnFilters: {
-        onColumnFiltersChange: (next) =>
-          store.listState.update((cur) => ({ ...cur, columnFilters: next })),
-      },
+      onColumnFiltersChange: (next) =>
+        store.listState.update((cur) => ({ ...cur, columnFilters: next })),
+      onGlobalFilterChange: (next) =>
+        store.listState.update((cur) => ({ ...cur, globalFilter: next })),
     },
     items,
   );

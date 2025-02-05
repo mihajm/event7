@@ -10,6 +10,8 @@ import {
   Signal,
   TemplateRef,
 } from '@angular/core';
+import { createStringState, StringState } from '@e7/common/form';
+import { injectSharedT } from '@e7/common/locale';
 import { mutable } from '@e7/common/reactivity';
 import { CellState } from './cell.component';
 import { ColumnDef } from './column';
@@ -51,6 +53,7 @@ export type TableValue = {
   sort?: SortValue;
   columnFilters?: ColumnFiltersValue;
   pagination?: PaginationValue;
+  globalFilter?: string | null;
 };
 
 export type TableOptions<T> = {
@@ -58,9 +61,8 @@ export type TableOptions<T> = {
   initial?: TableValue;
   pagination?: PaginationOptions;
   sort?: SortOptions;
-  columnFilters?: {
-    onColumnFiltersChange?: (filters: ColumnFiltersValue) => void;
-  };
+  onColumnFiltersChange?: (filters: ColumnFiltersValue) => void;
+  onGlobalFilterChange?: (filter: string | null) => void;
 };
 
 export type TableState<T> = {
@@ -71,6 +73,7 @@ export type TableState<T> = {
     rows: Signal<RowState<T>[]>;
   };
   columnFilters: ColumnFiltersState;
+  globalFilter: StringState;
   sort: SortState;
   pagination: PaginationState;
 };
@@ -78,6 +81,7 @@ export type TableState<T> = {
 export function injectCreateTableState() {
   const paginationFactory = injectCreatePaginationState();
   const headerFactory = injectCreateHeaderRowState();
+  const t = injectSharedT();
   return <T>(
     initial: TableValue | undefined,
     options: TableOptions<T>,
@@ -97,13 +101,23 @@ export function injectCreateTableState() {
 
     const columnFilterState = mutable(initial?.columnFilters ?? {});
 
+    const globalFilter = createStringState(initial?.globalFilter ?? null, t, {
+      label: () => t('shared.search'),
+    });
+
+    const originalSet = globalFilter.value.set;
+    globalFilter.value.set = (v) => {
+      options.onGlobalFilterChange?.(v);
+      originalSet(v);
+    };
+
     return {
       header: {
         row: headerFactory(
           options.columns,
           sort,
           columnFilterState,
-          options.columnFilters?.onColumnFiltersChange,
+          options.onColumnFiltersChange,
         ),
       },
       body: {
@@ -111,6 +125,7 @@ export function injectCreateTableState() {
       },
       sort,
       columnFilters: columnFilterState,
+      globalFilter,
       pagination: paginationFactory(
         initial?.pagination,
         length,
@@ -148,7 +163,7 @@ export class CellDirective {
   ],
   template: `
     <header>
-      <app-table-toolbar />
+      <app-table-toolbar [globalFilter]="state().globalFilter" />
     </header>
     <div class="table-container">
       <div class="table">

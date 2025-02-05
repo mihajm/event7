@@ -1,12 +1,19 @@
 import { HttpClient } from '@angular/common/http';
-import { computed, effect, inject, Injectable, untracked } from '@angular/core';
+import {
+  computed,
+  effect,
+  inject,
+  Injectable,
+  untracked,
+  WritableSignal,
+} from '@angular/core';
 import {
   extendedResource,
   InferedRequestLoaderParams,
   queuedMutationResource,
 } from '@e7/common/http';
 import { removeEmptyKeys } from '@e7/common/object';
-import { stored } from '@e7/common/reactivity';
+import { debounced, stored, toWritable } from '@e7/common/reactivity';
 import { injectApiUrl } from '@e7/common/settings';
 import { TableValue, toServerFilters } from '@e7/common/table';
 import {
@@ -37,6 +44,7 @@ function toListParams(opt?: TableValue) {
     ...toPaginationParams(opt?.pagination),
     ...toServerFilters(opt?.columnFilters),
     sort: toSortParam(opt?.sort),
+    search: opt?.globalFilter || undefined,
   };
 }
 
@@ -136,18 +144,44 @@ function updateDTOToEventDef(dto: UpdateEventDefinitionDTO): EventDefinition {
   };
 }
 
+function injectListState(): WritableSignal<TableValue> {
+  const state = stored<TableValue>(
+    {},
+    {
+      key: 'EVENT_DEFINITIONS_TABLE',
+    },
+  );
+
+  const sort = computed(() => state().sort, {
+    equal: (a, b) => a?.direction === b?.direction && a?.id === b?.id,
+  });
+
+  const pagination = computed(() => state().pagination, {
+    equal: (a, b) => a?.page === b?.page && a?.size === b?.size,
+  });
+
+  const filters = debounced(computed(() => state().columnFilters));
+  const globalFilter = debounced(computed(() => state().globalFilter));
+
+  return toWritable(
+    computed(() => ({
+      sort: sort(),
+      pagination: pagination(),
+      columnFilters: filters(),
+      globalFilter: globalFilter(),
+    })),
+    state.set,
+    state.update,
+  );
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class EventDefinitionStore {
   private readonly svc = inject(EventDefinitionService);
 
-  readonly listState = stored<TableValue>(
-    {},
-    {
-      key: 'EVENT_DEFINITIONS_TABLE',
-    },
-  );
+  readonly listState = injectListState();
 
   private readonly isMobile = computed(() => false);
 

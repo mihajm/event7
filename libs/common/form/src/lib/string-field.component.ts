@@ -17,6 +17,7 @@ import {
   MatFormFieldModule,
   SubscriptSizing,
 } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { injectSharedT, SharedTranslator } from '@e7/common/locale';
 import { DerivedSignal } from '@e7/common/reactivity';
@@ -91,6 +92,7 @@ export function injectCreateStringState<TParent = undefined>(
     MatFormFieldModule,
     MatInputModule,
     ProvidedErrorDirective,
+    MatIcon,
   ],
   template: `
     <mat-form-field
@@ -100,6 +102,10 @@ export function injectCreateStringState<TParent = undefined>(
       [subscriptSizing]="subscriptSizing()"
       [dir]="directions().formField"
     >
+      @if (iconPrefix()) {
+        <mat-icon matPrefix>{{ iconPrefix() }}</mat-icon>
+      }
+
       @if (state().label()) {
         <mat-label>{{ state().label() }}</mat-label>
       }
@@ -158,6 +164,8 @@ export class StringFieldComponent<TParent = undefined> {
 
   private readonly model = viewChild.required(NgModel);
   readonly align = input<'left' | 'right'>('left');
+
+  readonly iconPrefix = input('');
 
   protected readonly directions = computed(() => {
     if (this.align() === 'left') {

@@ -180,9 +180,10 @@ export function addFilters<T extends PgSelect, TDef extends PgColumn>(
   qb: T,
   defMap: Map<string, TDef>,
   filters?: FilterEntry<TDef['name']>[],
+  search?: SQL<unknown>,
 ) {
-  const filteredParams = filters?.filter(([key]) => key.includes('.'));
-  if (!filteredParams?.length) return qb;
+  const filteredParams = filters?.filter(([key]) => key.includes('.')) ?? [];
+  if (!filteredParams.length && !search) return qb;
 
   const arr = filteredParams
     .map(([key, val]) => {
@@ -219,6 +220,8 @@ export function addFilters<T extends PgSelect, TDef extends PgColumn>(
       }
     })
     .filter((v) => v !== null);
+
+  if (search) arr.push(search);
 
   if (!arr.length) return qb;
 

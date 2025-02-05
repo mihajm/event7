@@ -1,3 +1,4 @@
+import { SQL } from 'drizzle-orm';
 import { PgColumn, PgSelect } from 'drizzle-orm/pg-core';
 import { addFilters, FilterEntry } from './filters';
 import { addPagination, PaginationOptions } from './pagination';
@@ -19,11 +20,13 @@ export type FindManyOptions<TDef extends PgColumn> = {
 export function buildFindMany<TSelect extends PgSelect, TDef extends PgColumn>(
   qb: TSelect,
   defMap: Map<string, TDef>,
-  opt?: Omit<FindManyOptions<TDef>, 'search'>,
+  opt?: Omit<FindManyOptions<TDef>, 'search'> & {
+    search?: SQL<unknown>;
+  },
 ) {
   if (!opt) return qb;
   qb = addPagination(qb, opt.pagination);
   qb = addSort(qb, defMap, opt.sort);
-  qb = addFilters(qb, defMap, opt.filters);
+  qb = addFilters(qb, defMap, opt.filters, opt.search);
   return qb;
 }

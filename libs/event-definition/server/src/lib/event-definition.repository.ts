@@ -11,7 +11,7 @@ import {
   InsertDefinition,
 } from '@e7/event-definition/db';
 import { Inject, Injectable } from '@nestjs/common';
-import { count, desc, eq, getTableColumns, sql } from 'drizzle-orm';
+import { count, eq, sql } from 'drizzle-orm';
 
 type CreateEventDefinition = Omit<
   InsertDefinition,
@@ -35,54 +35,26 @@ export class EventDefinitionRepository {
     const hasSearchQuery = opt?.search && opt.search.trim().length > 0;
     const searchPhrase = opt?.search?.trim() ?? '';
 
-    const selectStatement = hasSearchQuery
-      ? this.db
-          .select({
-            ...getTableColumns(eventDefinition),
-            rank: sql`ts_rank(
-              setweight(to_tsvector('english', ${eventDefinition.name}), 'A') ||
-              setweight(to_tsvector('english', ${eventDefinition.description}), 'B'),
-              websearch_to_tsquery('english', ${searchPhrase})
-            )`,
-            rankCd: sql`ts_rank_cd(
-              setweight(to_tsvector('english', ${eventDefinition.name}), 'A') ||
-              setweight(to_tsvector('english', ${eventDefinition.description}), 'B'),
-              websearch_to_tsquery('english', ${searchPhrase})
-            )`,
-          })
-          .from(eventDefinition)
-          .where(
-            sql`(
-            setweight(to_tsvector('english', ${eventDefinition.name}), 'A') ||
-            setweight(to_tsvector('english', ${eventDefinition.description}), 'B')
-          ) @@ websearch_to_tsquery('english', ${searchPhrase})`,
-          )
-          .orderBy((t) => [desc(t.rank), desc(t.rankCd)])
-      : this.db.select().from(eventDefinition);
+    const selectStatement = this.db.select().from(eventDefinition);
 
     return buildFindMany(
       selectStatement.$dynamic(),
       EVENT_DEFINITION_COLUMN_MAP,
       {
         ...opt,
+        search: hasSearchQuery
+          ? sql`(
+          setweight(to_tsvector('english', ${eventDefinition.name}), 'A') ||
+          setweight(to_tsvector('english', ${eventDefinition.description}), 'B')
+        ) @@ websearch_to_tsquery('english', ${searchPhrase})`
+          : undefined,
       },
-    )
-      .execute()
-      .then((res) => {
-        if (!hasSearchQuery) return res;
-
-        type $ = (typeof res)[0];
-
-        (res as ($ & { rank?: number; rankCd?: number })[]).forEach((r) => {
-          delete r.rank;
-          delete r.rankCd;
-        });
-
-        return res;
-      });
+    ).execute();
   }
 
   async count(opt?: FindManyOptions<EventDefinitionColumn>) {
+    const hasSearchQuery = opt?.search && opt.search.trim().length > 0;
+
     const searchPhrase = opt?.search?.trim() ?? '';
 
     const selectStatement = searchPhrase
@@ -91,12 +63,6 @@ export class EventDefinitionRepository {
             count: count(),
           })
           .from(eventDefinition)
-          .where(
-            sql`(
-            setweight(to_tsvector('english', ${eventDefinition.name}), 'A') ||
-            setweight(to_tsvector('english', ${eventDefinition.description}), 'B')
-          ) @@ websearch_to_tsquery('english', ${searchPhrase})`,
-          )
       : this.db.select({ count: count() }).from(eventDefinition);
 
     return buildFindMany(
@@ -104,6 +70,12 @@ export class EventDefinitionRepository {
       EVENT_DEFINITION_COLUMN_MAP,
       {
         ...opt,
+        search: hasSearchQuery
+          ? sql`(
+          setweight(to_tsvector('english', ${eventDefinition.name}), 'A') ||
+          setweight(to_tsvector('english', ${eventDefinition.description}), 'B')
+        ) @@ websearch_to_tsquery('english', ${searchPhrase})`
+          : undefined,
         sort: undefined,
         pagination: undefined,
       },
