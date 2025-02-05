@@ -44,10 +44,16 @@ const NUMBER_FILTER_MATCHERS = [
   'lte',
 ] as const;
 
+const DATE_FILTER_MATCHERS = [
+  'eqd',
+  'neqd',
+  ...NUMBER_FILTER_MATCHERS,
+] as const;
+
 type StringFilterMatcher = (typeof STRING_FILTER_MATCHERS)[number];
 
 type NumberFilterMatcher = (typeof NUMBER_FILTER_MATCHERS)[number];
-type DateFilterMatcher = NumberFilterMatcher;
+type DateFilterMatcher = (typeof DATE_FILTER_MATCHERS)[number];
 
 type StringFilterValue = {
   value: string | null;
@@ -72,7 +78,7 @@ type FilterValue = StringFilterValue | NumberFilterValue | DateFilterValue;
 const matchers = {
   string: STRING_FILTER_MATCHERS,
   number: NUMBER_FILTER_MATCHERS,
-  date: NUMBER_FILTER_MATCHERS,
+  date: DATE_FILTER_MATCHERS,
 } satisfies Record<FilterValue['valueType'], readonly FilterValue['matcher'][]>;
 
 export type ColumnFiltersValue = Record<string, FilterValue>;
@@ -114,6 +120,8 @@ function createMatcherTranslator(t: SharedTranslator) {
     lt: t('shared.table.filter.lt'),
     gte: t('shared.table.filter.gte'),
     lte: t('shared.table.filter.lte'),
+    eqd: t('shared.table.filter.eqd'),
+    neqd: t('shared.table.filter.neqd'),
   } satisfies Record<FilterValue['matcher'], string | undefined>;
 
   return (value: FilterValue['matcher']): string => {
@@ -132,7 +140,13 @@ export function toServerFilters(
   > = {};
 
   for (const [name, value] of entries(filters)) {
-    if (!name || !value.value) continue;
+    if (
+      !name ||
+      value.value === undefined ||
+      value.value === null ||
+      value.value === ''
+    )
+      continue;
     const key = `${name}.${value.matcher}`;
     if (value.valueType === 'date') {
       const dateVal =

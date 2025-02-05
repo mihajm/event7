@@ -21,6 +21,8 @@ const STRING_FILTER_TYPES = ['ilike', 'nilike'] as const;
 
 const NUMBER_FILTER_TYPES = ['gt', 'gte', 'lt', 'lte'] as const;
 
+const DATE_FILTER_TYPES = [...NUMBER_FILTER_TYPES, 'eqd', 'neqd'] as const;
+
 const GENERAL_FILTER_FNS = {
   eq: eq,
   neq: ne,
@@ -44,10 +46,44 @@ const NUMBER_FILTER_FNS = {
   (col: PgColumn, val: number) => SQL
 >;
 
+function toDayRange(date: Date) {
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  return [startOfDay, endOfDay];
+}
+
+function toEqualSameDayRangeFilter<T extends PgColumn>(
+  col: T,
+  date: Date,
+): SQL | null {
+  const [start, end] = toDayRange(date);
+  return and(gte(col, start), lte(col, end)) ?? null;
+}
+
+const DATE_FILTER_FNS = {
+  gt: (col: PgColumn, val: Date) => gt(col, val),
+  gte: (col: PgColumn, val: Date) => gte(col, val),
+  lt: (col: PgColumn, val: Date) => lt(col, val),
+  lte: (col: PgColumn, val: Date) => lte(col, val),
+  eqd: (col: PgColumn, val: Date) => toEqualSameDayRangeFilter(col, val),
+  neqd: (col: PgColumn, val: Date) => {
+    const [start, end] = toDayRange(val);
+    return or(lt(col, start), gt(col, end)) ?? null;
+  },
+} satisfies Record<
+  (typeof DATE_FILTER_TYPES)[number],
+  (col: PgColumn, val: Date) => SQL | null
+>;
+
 const KNOWN_FILTER_TYPES = [
   ...GENERAL_FILTER_TYPES,
   ...STRING_FILTER_TYPES,
   ...NUMBER_FILTER_TYPES,
+  ...DATE_FILTER_TYPES,
 ] as const;
 
 type KnownFilterType = (typeof KNOWN_FILTER_TYPES)[number];
@@ -77,6 +113,31 @@ function addNumberFilters<T extends PgColumn>(
   if (!fn) return null;
 
   return or(...values.map((v) => fn(col, v))) ?? null;
+}
+
+function addDateFilters<T extends PgColumn>(
+  col: T,
+  filter: FilterEntry<T['name']>,
+): SQL<unknown> | null {
+  const [key, val] = filter;
+
+  const values = (
+    Array.isArray(val) ? val.map((v) => new Date(v)) : [new Date(val)]
+  ).filter((v) => !isNaN(v.getTime()));
+
+  if (!values.length) return null;
+
+  const fn =
+    DATE_FILTER_FNS[key as keyof typeof DATE_FILTER_FNS] ??
+    GENERAL_FILTER_FNS[key as keyof typeof GENERAL_FILTER_FNS];
+
+  if (!fn) return null;
+
+  const filtered = values.map((v) => fn(col, v)).filter((v) => v !== null);
+
+  if (!filtered.length) return null;
+
+  return or(...filtered) ?? null;
 }
 
 function addStringFilters<T extends PgColumn>(
@@ -132,11 +193,19 @@ export function addFilters<T extends PgSelect, TDef extends PgColumn>(
 
       switch (col.dataType) {
         case 'number':
-        case 'date':
           return addNumberFilters(col, [
             filterType as FilterParam<typeof col.name>,
             val,
           ]);
+        case 'date': {
+          const sql = addDateFilters(col, [
+            filterType as FilterParam<typeof col.name>,
+            val,
+          ]);
+
+          return sql;
+        }
+
         case 'string':
           return addStringFilters(col, [
             filterType as FilterParam<typeof col.name>,

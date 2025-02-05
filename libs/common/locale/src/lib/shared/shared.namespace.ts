@@ -19,6 +19,8 @@ const ns = createNamespace('shared', {
   table: {
     filter: {
       eq: 'Equals',
+      eqd: 'Equals day',
+      neqd: 'Not equals day',
       neq: 'Not equals',
       ilike: 'Contains',
       nilike: 'Not contains',

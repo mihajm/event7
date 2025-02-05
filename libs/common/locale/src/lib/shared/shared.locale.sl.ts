@@ -20,6 +20,8 @@ export default createSharedTranslation('sl-SI', {
     filter: {
       eq: 'Enako',
       neq: 'Ne enako',
+      eqd: 'Enak dan',
+      neqd: 'Ne enak dan',
       ilike: 'Vsebuje',
       nilike: 'Ne vsebuje',
       gt: 'Več kot',

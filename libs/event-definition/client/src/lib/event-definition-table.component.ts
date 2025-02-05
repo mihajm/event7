@@ -139,14 +139,14 @@ function injectColumns() {
         label: () => t('eventDef.created'),
         filter: {
           valueType: 'date',
-          matcher: 'eq',
+          matcher: 'eqd',
         },
       },
     }),
     col.accessor('updatedAt', (e) => date(e.updatedAt), {
       header: {
         label: () => t('eventDef.updated'),
-        filter: { valueType: 'date', matcher: 'eq' },
+        filter: { valueType: 'date', matcher: 'eqd' },
       },
     }),
     col.display('actions', {
