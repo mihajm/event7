@@ -36,7 +36,7 @@ function toPaginationParams(opt: TableStateValue['pagination']) {
 }
 
 function toSortParam(opt?: TableStateValue['sort']): string | undefined {
-  if (!opt) return undefined;
+  if (!opt) return 'id';
 
   return opt.direction === 'desc' ? `-${opt.id}` : opt.id;
 }
@@ -210,7 +210,15 @@ export class EventDefinitionStore {
   private readonly svc = inject(EventDefinitionService);
 
   readonly listState = stored<TableStateValue>(
-    {},
+    {
+      columnFilters: {
+        status: {
+          value: 'archived',
+          matcher: 'neq',
+          valueType: 'string',
+        },
+      },
+    },
     {
       key: 'EVENT_DEFINITIONS_TABLE',
     },
