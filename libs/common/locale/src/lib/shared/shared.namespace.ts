@@ -37,6 +37,11 @@ const ns = createNamespace('shared', {
       lte: 'Less or equals',
       matcher: 'Matcher',
     },
+    sort: {
+      sort: 'Sort',
+      asc: 'Ascending',
+      desc: 'Descending',
+    },
     pagination: {
       firstPage: 'First page',
       lastPage: 'Last page',

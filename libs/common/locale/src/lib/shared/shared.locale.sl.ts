@@ -37,6 +37,11 @@ export default createSharedTranslation('sl-SI', {
       lte: 'Manj ali enako',
       matcher: 'Ujemanje',
     },
+    sort: {
+      sort: 'Razvrsti',
+      asc: 'Naraščajoče',
+      desc: 'Padajoče',
+    },
     pagination: {
       firstPage: 'Prva stran',
       lastPage: 'Zadnja stran',

@@ -432,6 +432,9 @@ export function injectCreateHeaderCell() {
       <button type="button" mat-menu-item [matMenuTriggerFor]="orderMenu">
         {{ order }}
       </button>
+      <button type="button" mat-menu-item [matMenuTriggerFor]="sortMenu">
+        {{ sortLabel }}
+      </button>
       <button type="button" mat-menu-item (click)="state().togglePinned()">
         {{ togglePinLabel() }}
       </button>
@@ -482,6 +485,25 @@ export function injectCreateHeaderCell() {
           }
         </button>
       }
+    </mat-menu>
+
+    <mat-menu #sortMenu>
+      <button
+        type="button"
+        mat-menu-item
+        (click)="sortAscending()"
+        [disabled]="isAscending()"
+      >
+        {{ sortAscLabel }}
+      </button>
+      <button
+        type="button"
+        mat-menu-item
+        (click)="sortDescending()"
+        [disabled]="isDescending()"
+      >
+        {{ sortDescLabel }}
+      </button>
     </mat-menu>
   `,
   styles: `
@@ -609,6 +631,9 @@ export class HeaderCellComponent {
   protected readonly moveRight = this.t('shared.table.order.moveRight');
   protected readonly moveToStart = this.t('shared.table.order.moveToStart');
   protected readonly moveToEnd = this.t('shared.table.order.moveToEnd');
+  protected readonly sortLabel = this.t('shared.table.sort.sort');
+  protected readonly sortAscLabel = this.t('shared.table.sort.asc');
+  protected readonly sortDescLabel = this.t('shared.table.sort.desc');
 
   readonly right = computed(() => this.state().column.align() === 'right');
 
@@ -634,4 +659,15 @@ export class HeaderCellComponent {
     if (this.sortState() === 'asc') return { id, direction: 'desc' };
     return null;
   });
+
+  protected readonly isAscending = computed(() => this.sortState() === 'asc');
+  protected readonly isDescending = computed(() => this.sortState() === 'desc');
+
+  protected sortAscending() {
+    this.state().sort.set({ id: this.state().column.name, direction: 'asc' });
+  }
+
+  protected sortDescending() {
+    this.state().sort.set({ id: this.state().column.name, direction: 'desc' });
+  }
 }
