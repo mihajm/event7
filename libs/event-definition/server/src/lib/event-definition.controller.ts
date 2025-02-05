@@ -19,6 +19,7 @@ import {
   Query,
   Request,
   Response,
+  Sse,
 } from '@nestjs/common';
 import {
   Request as ExpressRequest,
@@ -80,10 +81,19 @@ export class EventDefinitionController {
   }
 
   @Post()
-  create(@Body() body: CreateEventDefinitionDTO, @Ip() ip: string) {
+  create(
+    @Body() body: CreateEventDefinitionDTO,
+    @Ip() ip: string,
+    @Request() req: ExpressRequest,
+  ) {
     try {
       const validated = createEventDefinitionSchema.parse(body);
-      return this.svc.create(validated, ip);
+      const clientId = req.headers['x-client-id'];
+      return this.svc.create(
+        validated,
+        ip,
+        typeof clientId === 'string' && clientId ? clientId : undefined,
+      );
     } catch (e) {
       if (isZodErrorLike(e)) throw new BadRequestException(fromError(e));
       throw new InternalServerErrorException();
@@ -95,13 +105,25 @@ export class EventDefinitionController {
     @Param('id') id: string,
     @Body() body: UpdateEventDefinitionDTO,
     @Ip() ip: string,
+    @Request() req: ExpressRequest,
   ) {
     try {
       const validated = updateEventDefinitionSchema.parse(body);
-      return this.svc.update(id, validated, ip);
+      const clientId = req.headers['x-client-id'];
+      return this.svc.update(
+        id,
+        validated,
+        ip,
+        typeof clientId === 'string' && clientId ? clientId : undefined,
+      );
     } catch (e) {
       if (isZodErrorLike(e)) throw new BadRequestException(fromError(e));
       throw new InternalServerErrorException();
     }
+  }
+
+  @Sse('changes/:id')
+  changes(@Param('id') clientId: string, @Ip() ip: string) {
+    return this.svc.changes(clientId, ip);
   }
 }

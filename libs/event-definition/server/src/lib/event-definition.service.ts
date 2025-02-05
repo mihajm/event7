@@ -1,7 +1,9 @@
 import { FindManyOptions, toFilterEntries } from '@e7/common/db';
+import { removeEmptyKeys } from '@e7/common/object';
 import { EventDefinitionColumn } from '@e7/event-definition/db';
 import {
   CreateEventDefinitionDTO,
+  EventDefinition,
   UpdateEventDefinitionDTO,
 } from '@e7/event-definition/shared';
 import {
@@ -11,6 +13,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request as ExpressRequest } from 'express';
+import { filter, from, Subject, switchMap } from 'rxjs';
 import { AdsPermissionService } from './ads-permission.service';
 import {
   EVENT_DEFINITION_COLUMN_MAP,
@@ -65,8 +68,17 @@ function adPermissionFilters(ip: string, svc: AdsPermissionService) {
   };
 }
 
+type ChangeEvent = {
+  value: Omit<EventDefinition, 'type'> & {
+    type: Required<EventDefinition>['type'];
+  };
+  clientId?: string;
+};
+
 @Injectable()
 export class EventDefinitionService {
+  private readonly events$ = new Subject<ChangeEvent>();
+
   constructor(
     private readonly repo: EventDefinitionRepository,
     private readonly ads: AdsPermissionService,
@@ -122,13 +134,20 @@ export class EventDefinitionService {
     return null;
   }
 
-  async create(e: CreateEventDefinitionDTO, ip: string) {
+  async create(e: CreateEventDefinitionDTO, ip: string, clientId?: string) {
     if (e.type === 'ads' && !(await this.ads.hasPermission(ip)))
       throw new UnauthorizedException(`Not allowed to create ads events`);
-    return this.repo.create(e);
+    const created = await this.repo.create(e);
+    if (created) this.events$.next({ value: created, clientId });
+    return created;
   }
 
-  async update(id: string, e: UpdateEventDefinitionDTO, ip: string) {
+  async update(
+    id: string,
+    e: UpdateEventDefinitionDTO,
+    ip: string,
+    clientId?: string,
+  ) {
     const found = await this.repo.findOne(id);
     if (!found) throw new NotFoundException(`Event with id ${id} not found`);
 
@@ -138,16 +157,45 @@ export class EventDefinitionService {
     if (!canModify)
       throw new UnauthorizedException(`Not allowed to update ads events`);
 
-    return this.repo.update(id, parseUpdateDTO(id, e));
+    const updated = await this.repo.update(id, parseUpdateDTO(id, e));
+    if (updated)
+      this.events$.next({
+        value: {
+          ...removeEmptyKeys(e),
+          id,
+          type: updated.type,
+          updatedAt: updated.updatedAt,
+        },
+        clientId,
+      });
+
+    return updated;
   }
 
-  archive(id: string, ip: string) {
+  archive(id: string, ip: string, clientId?: string) {
     return this.update(
       id,
       {
         status: 'archived',
       },
       ip,
+      clientId,
+    );
+  }
+
+  changes(clientId: string, ip: string) {
+    return from(this.ads.hasPermission(ip)).pipe(
+      switchMap((hasPermission) =>
+        this.events$.pipe(
+          filter((e) => {
+            // Do not send ads events to clients without permission
+            if (e.value.type === 'ads' && !hasPermission) return false;
+            // Do not send to the client that triggered the event
+            if (e.clientId === clientId) return false;
+            return true;
+          }),
+        ),
+      ),
     );
   }
 }

@@ -37,17 +37,23 @@ const isEmptyObject = (o: object | null) => {
   return Array.isArray(o) ? isEmptyArray(o) : !!o && Object.keys(o).length > 0;
 };
 
+type NonNullableObject<T extends object> = {
+  [K in keyof T]: T[K] extends object
+    ? NonNullableObject<T[K]>
+    : NonNullable<T[K]>;
+};
+
 export const removeEmptyKeys = <T extends object>(
   o: T,
-): Partial<NonNullable<T>> => {
-  const result: Partial<NonNullable<T>> = {};
+): Partial<NonNullableObject<T>> => {
+  const result: Partial<NonNullableObject<T>> = {};
   for (const k of keys(o)) {
     const val = o[k];
     if (
       (typeof val === 'object' && isEmptyObject(val)) ||
       (typeof val !== 'object' && assertExists(val))
     ) {
-      result[k] = o[k] as NonNullable<T>[keyof T];
+      result[k] = o[k] as NonNullableObject<T>[keyof T];
     }
   }
   return result;

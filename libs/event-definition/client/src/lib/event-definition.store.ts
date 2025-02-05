@@ -63,6 +63,7 @@ function parseContentRange(contentRange?: string | null) {
   providedIn: 'root',
 })
 export class EventDefinitionService {
+  private readonly clientId = v7();
   private readonly http = inject(HttpClient);
   private readonly url = injectApiUrl('eventDefinition');
 
@@ -102,6 +103,11 @@ export class EventDefinitionService {
     return this.http.post<EventDefinition>(
       `${this.url}/event-definition`,
       body,
+      {
+        headers: {
+          'x-client-id': this.clientId,
+        },
+      },
     );
   }
 
@@ -113,6 +119,11 @@ export class EventDefinitionService {
     return this.http.patch<EventDefinition>(
       `${this.url}/event-definition/${id}`,
       body,
+      {
+        headers: {
+          'x-client-id': this.clientId,
+        },
+      },
     );
   }
 }
