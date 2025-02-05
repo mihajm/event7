@@ -129,12 +129,13 @@ export class EventDefinitionService {
   }
 
   async update(id: string, e: UpdateEventDefinitionDTO, ip: string) {
-    const verified = await this.ads.hasPermission(ip);
-    if (verified) return this.repo.update(id, parseUpdateDTO(id, e));
-
     const found = await this.repo.findOne(id);
     if (!found) throw new NotFoundException(`Event with id ${id} not found`);
-    if (found.type === 'ads')
+
+    const canModify =
+      found.type !== 'ads' || (await this.ads.hasPermission(ip));
+
+    if (!canModify)
       throw new UnauthorizedException(`Not allowed to update ads events`);
 
     return this.repo.update(id, parseUpdateDTO(id, e));
