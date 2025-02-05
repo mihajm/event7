@@ -31,21 +31,58 @@ export function injectDisplayStatus() {
   selector: 'app-event-status-badge',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass],
-  template: `<span [ngClass]="$any(status())">{{ label() }}</span>`,
+  template: `<span [ngClass]="statusClass()">{{ label() }}</span>`,
   styles: `
     :host {
       display: contents;
 
+      --draft-bg-light: color-mix(
+        in srgb,
+        hsl(15, 100%, 90%),
+        var(--mat-sys-primary) 10%
+      );
+
+      --draft-bg-dark: color-mix(
+        in srgb,
+        hsl(15, 100%, 30%),
+        var(--mat-sys-primary) 10%
+      );
+
+      --active-bg-light: color-mix(
+        in srgb,
+        hsl(164, 80%, 60%),
+        var(--mat-sys-primary) 10%
+      );
+
+      --active-bg-dark: color-mix(
+        in srgb,
+        hsl(164, 80%, 20%),
+        var(--mat-sys-primary) 10%
+      );
+
       span {
-        background: var(--mat-sys-primary-container);
-        color: var(--mat-sys-on-primary-container);
+        background: light-dark(var(--draft-bg-light), var(--draft-bg-dark));
+        color: var(--mat-app-text-color);
         padding: 2px 4px;
         border-radius: 4px;
 
         font-weight: 500;
+
         &.active {
-          background: hsl(164, 59%, 30%);
-          color: white;
+          background: light-dark(var(--active-bg-light), var(--active-bg-dark));
+          color: var(--mat-app-text-color);
+        }
+
+        &.archived {
+          background: light-dark(hsl(0, 0%, 45%), hsl(0, 0%, 65%));
+          color: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 10%));
+        }
+
+        &.ready {
+          // purplish pinkish
+
+          background: var(--mat-sys-primary-container);
+          color: var(--mat-sys-on-primary-container);
         }
       }
     }
@@ -59,4 +96,6 @@ export class EventStatusBadgeComponent {
     ): Required<EventDefinition>['status'] => s ?? 'draft',
   });
   protected readonly label = computed(() => this.translator(this.status()));
+
+  protected readonly statusClass = computed(() => `${this.status()}`);
 }

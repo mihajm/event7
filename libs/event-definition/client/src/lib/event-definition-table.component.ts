@@ -20,6 +20,7 @@ import { ArchiveEventTriggerComponent } from './archive-event-definition-dialog.
 import { EditEventTriggerComponent } from './edit-event-definition-dialog.component';
 import { EventDefinitionTypeStore } from './event-definition-type.store';
 import { EventDefinitionStore } from './event-definition.store';
+import { EventPriorityBadgeComponent } from './event-priority-badge.component';
 import {
   EventStatusBadgeComponent,
   injectDisplayStatus,
@@ -167,6 +168,7 @@ function createState() {
     ArchiveEventTriggerComponent,
     EditEventTriggerComponent,
     EventStatusBadgeComponent,
+    EventPriorityBadgeComponent,
   ],
   providers: [
     provideTableLocalization(() => {
@@ -178,6 +180,10 @@ function createState() {
   ],
   template: `
     <app-table [state]="state">
+      <app-event-priority-badge
+        *appCell="'priority'; let cell"
+        [priority]="cell.source().priority"
+      />
       <app-event-status-badge
         *appCell="'status'; let cell"
         [status]="cell.source().status"

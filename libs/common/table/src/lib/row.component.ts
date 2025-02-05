@@ -145,6 +145,10 @@ export function injectCreateHeaderRowState() {
       color: var(--mat-table-row-item-label-text-color, rgba(0, 0, 0, 0.87));
 
       &.odd {
+        --mat-table-background-color: var(
+          --app-table-odd-row-background-color,
+          var(--mat-autocomplete-background-color, #efedf1)
+        );
         background-color: var(
           --app-table-odd-row-background-color,
           var(--mat-autocomplete-background-color, #efedf1)
