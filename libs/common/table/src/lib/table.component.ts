@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { createStringState, StringState } from '@e7/common/form';
 import { injectSharedT } from '@e7/common/locale';
+import { entries } from '@e7/common/object';
 import { derived } from '@e7/common/reactivity';
 import { CellState } from './cell.component';
 import { ColumnDef } from './column';
@@ -74,6 +75,8 @@ export type TableState<T> = {
   globalFilter: StringState<TableStateValue>;
   sort: SortState;
   pagination: PaginationState;
+  hasFilters: Signal<boolean>;
+  clearFilters: () => void;
 };
 
 export function injectCreateTableState() {
@@ -122,6 +125,27 @@ export function injectCreateTableState() {
       },
     );
 
+    const hasColumnFilter = computed(() => {
+      const stateEntries = entries(columnFilterState());
+      if (!stateEntries.length) return false;
+
+      return (
+        stateEntries.filter(
+          ([, v]) =>
+            v.value !== null && v.value !== undefined && v.value !== '',
+        ).length > 0
+      );
+    });
+
+    const hasFilters = computed(
+      () => !!globalFilter.value() || hasColumnFilter(),
+    );
+
+    const clearFilters = () => {
+      globalFilter.value.set(null);
+      columnFilterState.set({});
+    };
+
     return {
       header: {
         row: headerFactory(options.columns, sort, columnFilterState),
@@ -141,6 +165,8 @@ export function injectCreateTableState() {
         length,
         options.pagination,
       ),
+      hasFilters,
+      clearFilters,
     };
   };
 }
@@ -173,7 +199,11 @@ export class CellDirective {
   ],
   template: `
     <header>
-      <app-table-toolbar [globalFilter]="state().globalFilter" />
+      <app-table-toolbar
+        [globalFilter]="state().globalFilter"
+        [hasFilters]="state().hasFilters()"
+        (clearFilters)="state().clearFilters()"
+      />
     </header>
     <div class="table-container">
       <div class="table">

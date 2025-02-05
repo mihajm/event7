@@ -1,11 +1,18 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  input,
+  output,
+} from '@angular/core';
+import { MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
 import { StringFieldComponent, StringState } from '@e7/common/form';
 import { TableStateValue } from './table.component';
 
 @Component({
   selector: 'app-table-toolbar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [StringFieldComponent],
+  imports: [StringFieldComponent, MatIconButton, MatIcon],
   template: `
     <section>
       <div class="container">
@@ -16,7 +23,13 @@ import { TableStateValue } from './table.component';
             subscriptSizing="dynamic"
           />
         </div>
-        <div class="menus"></div>
+        <div class="menus">
+          @if (hasFilters()) {
+            <button type="button" mat-icon-button (click)="clearFilters.emit()">
+              <mat-icon>filter_alt_off</mat-icon>
+            </button>
+          }
+        </div>
       </div>
     </section>
   `,
@@ -74,4 +87,6 @@ import { TableStateValue } from './table.component';
 })
 export class TableTooblarComponent {
   readonly globalFilter = input.required<StringState<TableStateValue>>();
+  readonly hasFilters = input(false);
+  readonly clearFilters = output<void>();
 }
