@@ -294,7 +294,7 @@ export class EventDefinitionStore {
 
   constructor() {
     effect(() => {
-      if (this.definitions.isLoading()) return;
+      if (this.definitions.isLoading() || this.mobile()) return;
       const state = this.mobileOrDesktopState();
       const { total } = this.definitions.value();
       const page = state.pagination?.page ?? 0;
