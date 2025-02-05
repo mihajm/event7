@@ -8,6 +8,7 @@ import {
   UpdateEventDefinitionDTO,
 } from '@e7/event-definition/shared';
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -145,6 +146,9 @@ export class EventDefinitionService {
   ) {
     const found = await this.repo.findOne(id);
     if (!found) throw new NotFoundException(`Event with id ${id} not found`);
+
+    if (found.status === 'archived')
+      throw new BadRequestException(`Event with id ${id} is archived`);
 
     const canModify =
       found.type !== 'ads' || (await this.ads.hasPermission(ip));
