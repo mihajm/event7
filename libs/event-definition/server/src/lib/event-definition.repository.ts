@@ -1,5 +1,5 @@
 import {
-  buildFindMany,
+  createFindMany,
   DRIZZLE,
   FindManyOptions,
   type Database,
@@ -9,9 +9,10 @@ import {
   eventDefinition,
   EventDefinitionColumn,
   InsertDefinition,
+  resolveEventDefinitionSearch,
 } from '@e7/event-definition/db';
 import { Inject, Injectable } from '@nestjs/common';
-import { count, eq, sql } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 
 type CreateEventDefinition = Omit<
   InsertDefinition,
@@ -29,57 +30,30 @@ export const EVENT_DEFINITION_COLUMN_MAP = new Map(
 
 @Injectable()
 export class EventDefinitionRepository {
+  private readonly buildFindMany = createFindMany(
+    () => this.db.select().from(eventDefinition).$dynamic(),
+    EVENT_DEFINITION_COLUMN_MAP,
+    resolveEventDefinitionSearch,
+  );
+
+  private readonly buildCountFindMany = createFindMany(
+    () => this.db.select({ count: count() }).from(eventDefinition).$dynamic(),
+    EVENT_DEFINITION_COLUMN_MAP,
+    resolveEventDefinitionSearch,
+  );
+
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
   async findMany(opt?: FindManyOptions<EventDefinitionColumn>) {
-    const hasSearchQuery = opt?.search && opt.search.trim().length > 0;
-    const searchPhrase = opt?.search?.trim() ?? '';
-
-    const selectStatement = this.db.select().from(eventDefinition);
-
-    return buildFindMany(
-      selectStatement.$dynamic(),
-      EVENT_DEFINITION_COLUMN_MAP,
-      {
-        ...opt,
-        search: hasSearchQuery
-          ? sql`(
-          setweight(to_tsvector('english', ${eventDefinition.name}), 'A') ||
-          setweight(to_tsvector('english', ${eventDefinition.description}), 'B')
-        ) @@ websearch_to_tsquery('english', ${searchPhrase})`
-          : undefined,
-      },
-    ).execute();
+    return this.buildFindMany(opt).execute();
   }
 
   async count(opt?: FindManyOptions<EventDefinitionColumn>) {
-    const hasSearchQuery = opt?.search && opt.search.trim().length > 0;
-
-    const searchPhrase = opt?.search?.trim() ?? '';
-
-    const selectStatement = searchPhrase
-      ? this.db
-          .select({
-            count: count(),
-          })
-          .from(eventDefinition)
-      : this.db.select({ count: count() }).from(eventDefinition);
-
-    return buildFindMany(
-      selectStatement.$dynamic(),
-      EVENT_DEFINITION_COLUMN_MAP,
-      {
-        ...opt,
-        search: hasSearchQuery
-          ? sql`(
-          setweight(to_tsvector('english', ${eventDefinition.name}), 'A') ||
-          setweight(to_tsvector('english', ${eventDefinition.description}), 'B')
-        ) @@ websearch_to_tsquery('english', ${searchPhrase})`
-          : undefined,
-        sort: undefined,
-        pagination: undefined,
-      },
-    )
+    return this.buildCountFindMany({
+      ...opt,
+      sort: undefined,
+      pagination: undefined,
+    })
       .execute()
       .then((r) => {
         const count = +(r.at(0)?.count ?? 0);

@@ -24,11 +24,12 @@ import {
 } from '@e7/common/form';
 import { injectSharedT, SharedTranslator } from '@e7/common/locale';
 import { entries } from '@e7/common/object';
-import { derived, DerivedSignal, MutableSignal } from '@e7/common/reactivity';
+import { derived, DerivedSignal } from '@e7/common/reactivity';
 import { v7 } from 'uuid';
 import { CellState } from './cell.component';
 import { SharedColumnState } from './column';
 import { SortState, SortValue } from './sort';
+import { TableStateValue } from './table.component';
 
 const GENERIC_FILTER_MATCHERS = ['eq', 'neq'] as const;
 const STRING_FILTER_MATCHERS = [
@@ -83,7 +84,10 @@ const matchers = {
 
 export type ColumnFiltersValue = Record<string, FilterValue>;
 
-export type ColumnFiltersState = MutableSignal<ColumnFiltersValue>;
+export type ColumnFiltersState = DerivedSignal<
+  TableStateValue,
+  ColumnFiltersValue
+>;
 
 export type HeaderCellDef<TFilter extends FilterValue = FilterValue> = {
   label: () => string;
@@ -188,10 +192,7 @@ function injectCreateHeaderFilter() {
     const baseState = derived(columnFiltersState, {
       from: (v) => v[name] ?? initialState,
       onChange: (next) => {
-        columnFiltersState.mutate((cur) => {
-          cur[name] = next;
-          return cur;
-        });
+        columnFiltersState.update((cur) => ({ ...cur, [name]: next }));
         onColumnFilterChange?.(untracked(columnFiltersState));
       },
     }) as unknown as DerivedSignal<ColumnFiltersState, ThisFilter>;
@@ -496,10 +497,10 @@ export class HeaderCellComponent {
     this.sortState() === 'desc' ? 'arrow_downward' : 'arrow_upward',
   );
 
-  protected readonly nextSort = computed((): SortValue | undefined => {
+  protected readonly nextSort = computed((): SortValue | null => {
     const id = this.state().column.name;
     if (this.sortState() === null) return { id, direction: 'asc' };
     if (this.sortState() === 'asc') return { id, direction: 'desc' };
-    return undefined;
+    return null;
   });
 }

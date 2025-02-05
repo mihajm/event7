@@ -19,16 +19,16 @@ import {
   SelectState,
 } from '@e7/common/form';
 import { injectSharedT } from '@e7/common/locale';
-import { derived, mutable } from '@e7/common/reactivity';
+import { derived, DerivedSignal } from '@e7/common/reactivity';
 import { injectDisableTooltips } from '@e7/common/settings';
 import { injectTableLocalization } from './localization';
+import { TableStateValue } from './table.component';
 
 export type PaginationOptions = {
   sizeOptions?: () => number[];
   showFirst?: () => boolean;
   showLast?: () => boolean;
   total?: () => number;
-  onPaginationChange?: (v: PaginationValue) => void;
 };
 
 export type PaginationValue = {
@@ -43,7 +43,8 @@ type PaginationChildren = {
 
 export type PaginationState = FormGroupSignal<
   PaginationValue,
-  PaginationChildren
+  PaginationChildren,
+  TableStateValue
 > & {
   showFirst: Signal<boolean>;
   showLast: Signal<boolean>;
@@ -60,7 +61,7 @@ export function injectCreatePaginationState() {
   const t = injectSharedT();
 
   return (
-    prev: PaginationValue | undefined,
+    value: DerivedSignal<TableStateValue, PaginationValue>,
     currentSize: Signal<number>,
     opt?: PaginationOptions,
   ): PaginationState => {
@@ -70,27 +71,11 @@ export function injectCreatePaginationState() {
       return provided;
     });
 
-    const fallback = untracked(sizes).at(0) ?? 10;
-    const initial = {
-      size: fallback,
-      page: 0,
-      ...prev,
-    };
-
-    const value = mutable(initial);
-
     const children: PaginationChildren = {
       size: createSelectState(
         derived(value, {
           from: (v) => v.size,
-          onChange: (v) => {
-            value.mutate((cur) => {
-              cur.size = v;
-              return cur;
-            });
-
-            opt?.onPaginationChange?.(untracked(value));
-          },
+          onChange: (v) => value.update((cur) => ({ ...cur, size: v })),
         }),
         t,
         {
@@ -102,13 +87,7 @@ export function injectCreatePaginationState() {
       page: createNumberState(
         derived(value, {
           from: (v) => v.page,
-          onChange: (v) => {
-            value.mutate((cur) => {
-              cur.page = v;
-              return cur;
-            });
-            opt?.onPaginationChange?.(untracked(value));
-          },
+          onChange: (v) => value.update((cur) => ({ ...cur, page: v })),
         }),
         t,
       ),

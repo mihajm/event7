@@ -9,10 +9,11 @@ import {
   input,
   Signal,
   TemplateRef,
+  WritableSignal,
 } from '@angular/core';
 import { createStringState, StringState } from '@e7/common/form';
 import { injectSharedT } from '@e7/common/locale';
-import { mutable } from '@e7/common/reactivity';
+import { derived } from '@e7/common/reactivity';
 import { CellState } from './cell.component';
 import { ColumnDef } from './column';
 import {
@@ -25,7 +26,7 @@ import {
   injectCreateHeaderRowState,
   RowState,
 } from './row.component';
-import { createSortState, SortOptions, SortState, SortValue } from './sort';
+import { createSortState, SortState, SortValue } from './sort';
 import { TableBodyComponent } from './table-body.component';
 import { TableHeadComponent } from './table-head.component';
 import {
@@ -49,7 +50,7 @@ function toCellMap<
   );
 }
 
-export type TableValue = {
+export type TableStateValue = {
   sort?: SortValue;
   columnFilters?: ColumnFiltersValue;
   pagination?: PaginationValue;
@@ -58,11 +59,8 @@ export type TableValue = {
 
 export type TableOptions<T> = {
   columns: ColumnDef<T, any>[];
-  initial?: TableValue;
+  initial?: TableStateValue;
   pagination?: PaginationOptions;
-  sort?: SortOptions;
-  onColumnFiltersChange?: (filters: ColumnFiltersValue) => void;
-  onGlobalFilterChange?: (filter: string | null) => void;
 };
 
 export type TableState<T> = {
@@ -73,7 +71,7 @@ export type TableState<T> = {
     rows: Signal<RowState<T>[]>;
   };
   columnFilters: ColumnFiltersState;
-  globalFilter: StringState;
+  globalFilter: StringState<TableStateValue>;
   sort: SortState;
   pagination: PaginationState;
 };
@@ -83,14 +81,21 @@ export function injectCreateTableState() {
   const headerFactory = injectCreateHeaderRowState();
   const t = injectSharedT();
   return <T>(
-    initial: TableValue | undefined,
+    state: WritableSignal<TableStateValue>,
     options: TableOptions<T>,
     source: () => T[],
   ): TableState<T> => {
     const ds = computed(() => source());
     const length = computed(() => ds()?.length ?? 0);
 
-    const sort = createSortState(initial?.sort, options.sort);
+    const sort = createSortState(
+      derived(state, {
+        from: (v) => v.sort ?? null,
+        onChange: (v) =>
+          state.update((cur) => ({ ...cur, sort: v ?? undefined })),
+        equal: (a, b) => a?.id === b?.id && a?.direction === b?.direction,
+      }),
+    );
 
     const rows = computed(() =>
       Array.from({ length: length() }).map((_, i) => {
@@ -99,26 +104,27 @@ export function injectCreateTableState() {
       }),
     );
 
-    const columnFilterState = mutable(initial?.columnFilters ?? {});
-
-    const globalFilter = createStringState(initial?.globalFilter ?? null, t, {
-      label: () => t('shared.search'),
+    const columnFilterState = derived(state, {
+      from: (v) => v.columnFilters ?? {},
+      onChange: (next) =>
+        state.update((cur) => ({ ...cur, columnFilters: next })),
     });
 
-    const originalSet = globalFilter.value.set;
-    globalFilter.value.set = (v) => {
-      options.onGlobalFilterChange?.(v);
-      originalSet(v);
-    };
+    const globalFilter = createStringState(
+      derived(state, {
+        from: (v) => v.globalFilter ?? null,
+        onChange: (next) =>
+          state.update((cur) => ({ ...cur, globalFilter: next })),
+      }),
+      t,
+      {
+        label: () => t('shared.search'),
+      },
+    );
 
     return {
       header: {
-        row: headerFactory(
-          options.columns,
-          sort,
-          columnFilterState,
-          options.onColumnFiltersChange,
-        ),
+        row: headerFactory(options.columns, sort, columnFilterState),
       },
       body: {
         rows,
@@ -127,7 +133,11 @@ export function injectCreateTableState() {
       columnFilters: columnFilterState,
       globalFilter,
       pagination: paginationFactory(
-        initial?.pagination,
+        derived(state, {
+          from: (v) => v.pagination ?? { page: 0, size: 10 },
+          onChange: (next) =>
+            state.update((cur) => ({ ...cur, pagination: next })),
+        }),
         length,
         options.pagination,
       ),

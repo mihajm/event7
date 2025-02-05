@@ -1,8 +1,8 @@
 import { SQL } from 'drizzle-orm';
 import { PgColumn, PgSelect } from 'drizzle-orm/pg-core';
-import { addFilters, FilterEntry } from './filters';
+import { createAddFilters, FilterEntry } from './filters';
 import { addPagination, PaginationOptions } from './pagination';
-import { addSort, SortParameter } from './sort';
+import { createAddSort, SortParameter } from './sort';
 
 export type ColumnName<TDef extends PgColumn> = TDef['name'];
 
@@ -17,16 +17,19 @@ export type FindManyOptions<TDef extends PgColumn> = {
   search?: string;
 };
 
-export function buildFindMany<TSelect extends PgSelect, TDef extends PgColumn>(
-  qb: TSelect,
+export function createFindMany<TSelect extends PgSelect, TDef extends PgColumn>(
+  provider: () => TSelect,
   defMap: Map<string, TDef>,
-  opt?: Omit<FindManyOptions<TDef>, 'search'> & {
-    search?: SQL<unknown>;
-  },
+  resolveSearch?: (search?: string) => SQL<unknown> | null,
 ) {
-  if (!opt) return qb;
-  qb = addPagination(qb, opt.pagination);
-  qb = addSort(qb, defMap, opt.sort);
-  qb = addFilters(qb, defMap, opt.filters, opt.search);
-  return qb;
+  const filters = createAddFilters(defMap, resolveSearch ?? (() => null));
+  const sort = createAddSort(defMap);
+  return (opt?: FindManyOptions<TDef>) => {
+    let qb = provider();
+    if (!opt) return qb;
+    qb = addPagination(qb, opt.pagination);
+    qb = filters(qb, opt.filters, opt.search);
+    qb = sort(qb, opt.sort);
+    return qb;
+  };
 }

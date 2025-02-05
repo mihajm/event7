@@ -1,5 +1,5 @@
 import { ColumnName, SortParameter } from '@e7/common/db';
-import { sql } from 'drizzle-orm';
+import { SQL, sql } from 'drizzle-orm';
 import {
   index,
   integer,
@@ -85,4 +85,15 @@ export function toEventDefinitionSort(
   const arr = Array.isArray(sort) ? sort : [sort];
 
   return arr.filter(isEventDefinitionSort);
+}
+
+export function resolveEventDefinitionSearch(
+  search?: string,
+): SQL<unknown> | null {
+  if (!search || search.trim().length === 0) return null;
+
+  return sql`(
+          setweight(to_tsvector('english', ${eventDefinition.name}), 'A') ||
+          setweight(to_tsvector('english', ${eventDefinition.description}), 'B')
+        ) @@ to_tsquery('english', ${search})`;
 }

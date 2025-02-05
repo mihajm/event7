@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { StringFieldComponent, StringState } from '@e7/common/form';
+import { TableStateValue } from './table.component';
 
 @Component({
   selector: 'app-table-toolbar',
@@ -72,5 +73,5 @@ import { StringFieldComponent, StringState } from '@e7/common/form';
   `,
 })
 export class TableTooblarComponent {
-  readonly globalFilter = input.required<StringState>();
+  readonly globalFilter = input.required<StringState<TableStateValue>>();
 }

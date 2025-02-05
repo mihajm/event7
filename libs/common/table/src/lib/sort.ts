@@ -1,29 +1,22 @@
-import { signal, Signal } from '@angular/core';
+import { Signal } from '@angular/core';
+import { DerivedSignal } from '@e7/common/reactivity';
+import { TableStateValue } from './table.component';
 
 export type SortValue = {
   id: string;
   direction: 'asc' | 'desc';
 };
 
-export type SortOptions = {
-  onSortChange?: (v?: SortValue) => void;
-};
-
 export type SortState = {
-  value: Signal<SortValue | undefined>;
-  set: (value?: SortValue) => void;
+  value: Signal<SortValue | null>;
+  set: (value: SortValue | null) => void;
 };
 
-export function createSortState(prev?: SortValue, opt?: SortOptions) {
-  const value = signal(prev, {
-    equal: (a, b) => a?.id === b?.id && a?.direction === b?.direction,
-  });
-
+export function createSortState(
+  value: DerivedSignal<TableStateValue, SortValue | null>,
+): SortState {
   return {
     value,
-    set: (next?: SortValue) => {
-      opt?.onSortChange?.(next);
-      value.set(next);
-    },
+    set: value.set,
   };
 }

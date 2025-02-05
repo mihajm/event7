@@ -5,7 +5,6 @@ import {
   computed,
   inject,
   LOCALE_ID,
-  untracked,
 } from '@angular/core';
 import { injectDateFnsLocale } from '@e7/common/locale';
 import {
@@ -163,28 +162,12 @@ function createState() {
   const items = computed(() => store.definitions.value().events);
 
   return factory(
-    untracked(store.listState),
+    store.listState,
     {
       columns,
       pagination: {
-        onPaginationChange: (next) =>
-          store.listState.update((prev) => ({
-            ...prev,
-            pagination: next,
-          })),
         total,
       },
-      sort: {
-        onSortChange: (next) =>
-          store.listState.update((prev) => ({
-            ...prev,
-            sort: next,
-          })),
-      },
-      onColumnFiltersChange: (next) =>
-        store.listState.update((cur) => ({ ...cur, columnFilters: next })),
-      onGlobalFilterChange: (next) =>
-        store.listState.update((cur) => ({ ...cur, globalFilter: next })),
     },
     items,
   );

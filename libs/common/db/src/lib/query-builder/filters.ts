@@ -176,56 +176,62 @@ function addGeneralFilters<T extends PgColumn>(
   return or(...values.map((v) => fn(col, v))) ?? null;
 }
 
-export function addFilters<T extends PgSelect, TDef extends PgColumn>(
-  qb: T,
+export function createAddFilters<TDef extends PgColumn>(
   defMap: Map<string, TDef>,
-  filters?: FilterEntry<TDef['name']>[],
-  search?: SQL<unknown>,
+  resolveSearch: (search?: string) => SQL<unknown> | null,
 ) {
-  const filteredParams = filters?.filter(([key]) => key.includes('.')) ?? [];
-  if (!filteredParams.length && !search) return qb;
+  return <T extends PgSelect>(
+    qb: T,
+    filters?: FilterEntry<TDef['name']>[],
+    searchValue?: string,
+  ) => {
+    const search = resolveSearch(searchValue);
 
-  const arr = filteredParams
-    .map(([key, val]) => {
-      const [colName, filterType] = key.split('.');
-      if (!colName || !filterType) return null;
-      const col = defMap.get(colName);
-      if (!col) return null;
+    const filteredParams = filters?.filter(([key]) => key.includes('.')) ?? [];
+    if (!filteredParams.length && !search) return qb;
 
-      switch (col.dataType) {
-        case 'number':
-          return addNumberFilters(col, [
-            filterType as FilterParam<typeof col.name>,
-            val,
-          ]);
-        case 'date': {
-          const sql = addDateFilters(col, [
-            filterType as FilterParam<typeof col.name>,
-            val,
-          ]);
+    const arr = filteredParams
+      .map(([key, val]) => {
+        const [colName, filterType] = key.split('.');
+        if (!colName || !filterType) return null;
+        const col = defMap.get(colName);
+        if (!col) return null;
 
-          return sql;
+        switch (col.dataType) {
+          case 'number':
+            return addNumberFilters(col, [
+              filterType as FilterParam<typeof col.name>,
+              val,
+            ]);
+          case 'date': {
+            const sql = addDateFilters(col, [
+              filterType as FilterParam<typeof col.name>,
+              val,
+            ]);
+
+            return sql;
+          }
+
+          case 'string':
+            return addStringFilters(col, [
+              filterType as FilterParam<typeof col.name>,
+              val,
+            ]);
+          default:
+            return addGeneralFilters(col, [
+              filterType as FilterParam<typeof col.name>,
+              val,
+            ]);
         }
+      })
+      .filter((v) => v !== null);
 
-        case 'string':
-          return addStringFilters(col, [
-            filterType as FilterParam<typeof col.name>,
-            val,
-          ]);
-        default:
-          return addGeneralFilters(col, [
-            filterType as FilterParam<typeof col.name>,
-            val,
-          ]);
-      }
-    })
-    .filter((v) => v !== null);
+    if (search) arr.push(search);
 
-  if (search) arr.push(search);
+    if (!arr.length) return qb;
 
-  if (!arr.length) return qb;
-
-  return qb.where(and(...arr));
+    return qb.where(and(...arr));
+  };
 }
 
 function isStringOrStringArray(value: unknown): value is string | string[] {

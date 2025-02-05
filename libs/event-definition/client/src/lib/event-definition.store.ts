@@ -4,8 +4,8 @@ import {
   effect,
   inject,
   Injectable,
+  Signal,
   untracked,
-  WritableSignal,
 } from '@angular/core';
 import {
   extendedResource,
@@ -13,9 +13,9 @@ import {
   queuedMutationResource,
 } from '@e7/common/http';
 import { removeEmptyKeys } from '@e7/common/object';
-import { debounced, stored, toWritable } from '@e7/common/reactivity';
+import { debounced, stored } from '@e7/common/reactivity';
 import { injectApiUrl } from '@e7/common/settings';
-import { TableValue, toServerFilters } from '@e7/common/table';
+import { TableStateValue, toServerFilters } from '@e7/common/table';
 import {
   CreateEventDefinitionDTO,
   EventDefinition,
@@ -24,7 +24,7 @@ import {
 import { map, Observable, of } from 'rxjs';
 import { v7 } from 'uuid';
 
-function toPaginationParams(opt: TableValue['pagination']) {
+function toPaginationParams(opt: TableStateValue['pagination']) {
   const size = opt?.size ?? 10;
   const page = opt?.page ?? 0;
   return {
@@ -33,13 +33,13 @@ function toPaginationParams(opt: TableValue['pagination']) {
   };
 }
 
-function toSortParam(opt?: TableValue['sort']): string | undefined {
+function toSortParam(opt?: TableStateValue['sort']): string | undefined {
   if (!opt) return undefined;
 
   return opt.direction === 'desc' ? `-${opt.id}` : opt.id;
 }
 
-function toListParams(opt?: TableValue) {
+function toListParams(opt?: TableStateValue) {
   return {
     ...toPaginationParams(opt?.pagination),
     ...toServerFilters(opt?.columnFilters),
@@ -67,7 +67,7 @@ export class EventDefinitionService {
   private readonly url = injectApiUrl('eventDefinition');
 
   list(
-    opt?: TableValue,
+    opt?: TableStateValue,
   ): Observable<{ events: EventDefinition[]; total: number }> {
     if (!this.url) throw new Error('Event definition api disabled');
     return this.http
@@ -144,14 +144,9 @@ function updateDTOToEventDef(dto: UpdateEventDefinitionDTO): EventDefinition {
   };
 }
 
-function injectListState(): WritableSignal<TableValue> {
-  const state = stored<TableValue>(
-    {},
-    {
-      key: 'EVENT_DEFINITIONS_TABLE',
-    },
-  );
-
+function debounceState(
+  state: Signal<TableStateValue>,
+): Signal<TableStateValue> {
   const sort = computed(() => state().sort, {
     equal: (a, b) => a?.direction === b?.direction && a?.id === b?.id,
   });
@@ -163,16 +158,12 @@ function injectListState(): WritableSignal<TableValue> {
   const filters = debounced(computed(() => state().columnFilters));
   const globalFilter = debounced(computed(() => state().globalFilter));
 
-  return toWritable(
-    computed(() => ({
-      sort: sort(),
-      pagination: pagination(),
-      columnFilters: filters(),
-      globalFilter: globalFilter(),
-    })),
-    state.set,
-    state.update,
-  );
+  return computed(() => ({
+    sort: sort(),
+    pagination: pagination(),
+    columnFilters: filters(),
+    globalFilter: globalFilter(),
+  }));
 }
 
 @Injectable({
@@ -181,15 +172,22 @@ function injectListState(): WritableSignal<TableValue> {
 export class EventDefinitionStore {
   private readonly svc = inject(EventDefinitionService);
 
-  readonly listState = injectListState();
+  readonly listState = stored<TableStateValue>(
+    {},
+    {
+      key: 'EVENT_DEFINITIONS_TABLE',
+    },
+  );
+
+  readonly debouncedState = debounceState(this.listState);
 
   private readonly isMobile = computed(() => false);
 
-  private readonly mobileOrDesktopState = computed((): TableValue => {
-    if (!this.isMobile()) return this.listState();
+  private readonly mobileOrDesktopState = computed((): TableStateValue => {
+    if (!this.isMobile()) return this.debouncedState();
 
     return {
-      pagination: this.listState().pagination,
+      pagination: this.debouncedState().pagination,
     };
   });
 
