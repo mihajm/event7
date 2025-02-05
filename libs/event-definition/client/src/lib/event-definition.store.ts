@@ -222,6 +222,7 @@ export class EventDefinitionStore {
         id: 'createdAt',
         direction: 'desc',
       },
+      pin: 'actions',
     },
     {
       key: 'EVENT_DEFINITIONS_TABLE',

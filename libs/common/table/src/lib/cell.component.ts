@@ -29,6 +29,7 @@ export type CellState<T, U> = {
   isLast: Signal<boolean>;
   toggleVisibility: () => void;
   disableHide: Signal<boolean>;
+  pinned: Signal<boolean>;
 };
 
 export function createCell<T, U>(
@@ -40,6 +41,7 @@ export function createCell<T, U>(
     Record<string, boolean | undefined>
   >,
   columnOrderState: DerivedSignal<TableStateValue, string[]>,
+  pinState: DerivedSignal<TableStateValue, string | null>,
 ): CellState<T, U> {
   const disableHide = computed(() => def.disableHide?.() ?? false);
   return {
@@ -53,6 +55,7 @@ export function createCell<T, U>(
     isLast: computed(() => columnOrderState().at(-1) === col.name),
     show: computed(() => columnVisibilityState()[col.name] ?? false),
     disableHide,
+    pinned: computed(() => pinState() === col.name),
     toggleVisibility: () => {
       if (untracked(disableHide)) return;
       columnVisibilityState.update((cur) => ({
@@ -68,6 +71,7 @@ export function createCell<T, U>(
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '[class.right]': 'right()',
+    '[class.pin]': 'state().pinned()',
   },
   imports: [NgTemplateOutlet],
   template: `
@@ -102,6 +106,19 @@ export function createCell<T, U>(
       justify-content: flex-start;
       flex: 1;
       min-width: 200px;
+
+      &.pin {
+        z-index: 100;
+        position: sticky;
+        right: 0;
+        width: fit-content;
+        border-left-width: var(--mat-table-row-item-outline-width, 1px);
+        border-left-style: solid;
+        border-left-color: var(
+          --mat-table-row-item-outline-color,
+          rgba(0, 0, 0, 0.12)
+        );
+      }
 
       span {
         text-overflow: ellipsis;

@@ -119,6 +119,7 @@ export type HeaderCellState = Omit<CellState<unknown, string>, 'source'> & {
   moveRight: () => void;
   moveToStart: () => void;
   moveToEnd: () => void;
+  togglePinned: () => void;
 };
 
 function createMatcherTranslator(t: SharedTranslator) {
@@ -313,9 +314,21 @@ export function injectCreateHeaderCell() {
       Record<string, boolean | undefined>
     >,
     columnOrderState: DerivedSignal<TableStateValue, string[]>,
+    pinState: DerivedSignal<TableStateValue, string | null>,
   ): HeaderCellState => {
     const disableHide = computed(() => def.disableHide?.() ?? false);
     const label = computed(() => def.label() ?? '');
+
+    const moveToEnd = () => {
+      columnOrderState.update((cur) => {
+        const idx = cur.indexOf(col.name);
+        if (idx === -1 || idx === cur.length - 1) return cur;
+        const next = [...cur];
+        next.splice(idx, 1);
+        next.push(col.name);
+        return next;
+      });
+    };
     return {
       id: v7(),
       value: label,
@@ -332,6 +345,7 @@ export function injectCreateHeaderCell() {
       isFirst: computed(() => columnOrderState().at(0) === col.name),
       isLast: computed(() => columnOrderState().at(-1) === col.name),
       show: computed(() => columnVisibilityState()[col.name] ?? false),
+      pinned: computed(() => pinState() === col.name),
       hideColumn: () => {
         if (untracked(disableHide)) return;
         columnVisibilityState.update((cur) => ({ ...cur, [col.name]: false }));
@@ -371,15 +385,10 @@ export function injectCreateHeaderCell() {
           return next;
         });
       },
-      moveToEnd: () => {
-        columnOrderState.update((cur) => {
-          const idx = cur.indexOf(col.name);
-          if (idx === -1 || idx === cur.length - 1) return cur;
-          const next = [...cur];
-          next.splice(idx, 1);
-          next.push(col.name);
-          return next;
-        });
+      moveToEnd,
+      togglePinned: () => {
+        pinState.update((cur) => (cur === col.name ? null : col.name));
+        moveToEnd();
       },
     };
   };
@@ -390,6 +399,7 @@ export function injectCreateHeaderCell() {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '[class.right]': 'right()',
+    '[class.pin]': 'state().pinned()',
   },
   imports: [MatIconButton, MatIcon, FieldComponent, MatMenuModule],
   template: `
@@ -421,6 +431,9 @@ export function injectCreateHeaderCell() {
       </button>
       <button type="button" mat-menu-item [matMenuTriggerFor]="orderMenu">
         {{ order }}
+      </button>
+      <button type="button" mat-menu-item (click)="state().togglePinned()">
+        {{ togglePinLabel() }}
       </button>
       <button
         type="button"
@@ -494,6 +507,19 @@ export function injectCreateHeaderCell() {
       flex: 1;
       min-width: 200px;
 
+      &.pin {
+        margin-top: -5px;
+        z-index: 1000;
+        position: sticky;
+        right: 0;
+        border-left-width: var(--mat-table-row-item-outline-width, 1px);
+        border-left-style: solid;
+        border-left-color: var(
+          --mat-table-row-item-outline-color,
+          rgba(0, 0, 0, 0.12)
+        );
+      }
+
       div.container {
         text-align: inherit;
 
@@ -519,11 +545,16 @@ export function injectCreateHeaderCell() {
         button {
           transition: opacity 0.2s;
           scale: 0.6;
+
           opacity: 0;
 
           &.active {
             opacity: 1;
           }
+        }
+        button:last-of-type {
+          position: relative;
+          right: 12px;
         }
 
         span {
@@ -589,6 +620,12 @@ export class HeaderCellComponent {
 
   protected readonly sortIcon = computed(() =>
     this.sortState() === 'desc' ? 'arrow_downward' : 'arrow_upward',
+  );
+
+  protected readonly togglePinLabel = computed(() =>
+    this.state().pinned()
+      ? this.t('shared.table.pinning.unpin')
+      : this.t('shared.table.pinning.pin'),
   );
 
   protected readonly nextSort = computed((): SortValue | null => {

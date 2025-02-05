@@ -39,6 +39,7 @@ export function createRowState<T>(
     TableStateValue,
     Record<string, boolean | undefined>
   >,
+  pinState: DerivedSignal<TableStateValue, string | null>,
 ): RowState<T> {
   const columns = computed(() =>
     defs.map((def) =>
@@ -48,6 +49,7 @@ export function createRowState<T>(
         def.shared,
         columnVisibilityState,
         columnOrderState,
+        pinState,
       ),
     ),
   );
@@ -84,6 +86,7 @@ export function injectCreateHeaderRowState() {
       TableStateValue,
       Record<string, boolean | undefined>
     >,
+    pinState: DerivedSignal<TableStateValue, string | null>,
   ): HeaderRowState => {
     const columns = computed(() =>
       defs.map((def) =>
@@ -94,6 +97,7 @@ export function injectCreateHeaderRowState() {
           columnFilters,
           columnVisibilityState,
           columnOrderState,
+          pinState,
         ),
       ),
     );

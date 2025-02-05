@@ -55,9 +55,10 @@ export type TableStateValue = {
   sort?: SortValue;
   columnFilters?: ColumnFiltersValue;
   pagination?: PaginationValue;
-  globalFilter?: string | null;
+  globalFilter?: string;
   columnVisibility?: Record<string, boolean | undefined>;
   columnOrder?: string[];
+  pin?: string;
 };
 
 export type TableOptions<T> = {
@@ -84,6 +85,7 @@ export type TableState<T> = {
   columnFilters: ColumnFiltersState;
   sort: SortState;
   pagination: PaginationState;
+  pin: DerivedSignal<TableStateValue, string | null>;
 };
 
 export function injectCreateTableState() {
@@ -131,6 +133,12 @@ export function injectCreateTableState() {
       }),
     );
 
+    const pin = derived(state, {
+      from: (v) => v.pin ?? null,
+      onChange: (next) =>
+        state.update((cur) => ({ ...cur, pin: next ?? undefined })),
+    });
+
     const rows = computed(() =>
       Array.from({ length: length() }).map((_, i) => {
         const state = computed(() => ds()?.[i]);
@@ -139,6 +147,7 @@ export function injectCreateTableState() {
           state,
           columnOrder,
           columnVisibility,
+          pin,
         );
       }),
     );
@@ -153,7 +162,7 @@ export function injectCreateTableState() {
       derived(state, {
         from: (v) => v.globalFilter ?? null,
         onChange: (next) =>
-          state.update((cur) => ({ ...cur, globalFilter: next })),
+          state.update((cur) => ({ ...cur, globalFilter: next ?? undefined })),
       }),
       t,
       {
@@ -190,6 +199,7 @@ export function injectCreateTableState() {
           columnFilterState,
           columnOrder,
           columnVisibility,
+          pin,
         ),
         globalFilter,
         hasFilters,
@@ -199,6 +209,7 @@ export function injectCreateTableState() {
         rows,
       },
       sort,
+      pin,
       columnVisibility,
       columnFilters: columnFilterState,
       pagination: paginationFactory(

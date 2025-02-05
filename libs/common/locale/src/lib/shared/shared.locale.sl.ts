@@ -46,6 +46,10 @@ export default createSharedTranslation('sl-SI', {
       moveToEnd: 'Premakni na konec',
       order: 'Vrstni red',
     },
+    pinning: {
+      pin: 'Pripni',
+      unpin: 'Odpni',
+    },
     visibility: {
       hideColumn: 'Skrij stolpec',
     },

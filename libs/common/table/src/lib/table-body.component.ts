@@ -29,9 +29,7 @@ import { TableState } from './table.component';
   `,
   styles: `
     :host {
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
+      display: contents;
 
       background: inherit;
       -moz-osx-font-smoothing: grayscale;

@@ -46,6 +46,10 @@ const ns = createNamespace('shared', {
       moveToEnd: 'Move to end',
       order: 'Order',
     },
+    pinning: {
+      pin: 'Pin',
+      unpin: 'Unpin',
+    },
     visibility: {
       hideColumn: 'Hide column',
     },

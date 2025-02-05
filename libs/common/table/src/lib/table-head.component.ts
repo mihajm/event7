@@ -16,10 +16,10 @@ import { TableState } from './table.component';
   `,
   styles: `
     :host {
+      z-index: 500;
       padding-top: 10px;
       position: sticky;
       top: 0;
-      z-index: 100;
 
       display: flex;
       flex-direction: column;
