@@ -26,6 +26,8 @@ A seed script is also available to pre-populate existing tables. After migration
 
 _Please note that due to the permission logic, running the server locally will result in you not being allowed to view event definitions with the type of "ads", because of this returned total count returned from an unlimited list query might yield less than the provided seed count_
 
+To create new migration scripts when changing the database schema use the command `npx nx run-many --target=generate` this will run scripts in any libraries that need to generate new migration scripts
+
 ### Serving
 
 Both the server & client applications have prepared "serve" nx executors you can run them similarly to the migration/seed scripts mentioned above:
