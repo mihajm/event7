@@ -337,10 +337,10 @@ export class EventDefinitionStore {
 
         return {
           revert: () => {
-            // this.definitions.set({
-            //   ...untracked(this.definitions.value),
-            //   total: untracked(this.definitions.value).total - 1,
-            // });
+            this.definitions.set({
+              ...untracked(this.definitions.value),
+              total: untracked(this.definitions.value).total - 1,
+            });
           },
           reOpen: r.reOpen,
           retry: () => {
