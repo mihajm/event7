@@ -134,7 +134,14 @@ export function toServerFilters(
   for (const [name, value] of entries(filters)) {
     if (!name || !value.value) continue;
     const key = `${name}.${value.matcher}`;
-    parsed[key] = value.value;
+    if (value.valueType === 'date') {
+      const dateVal =
+        typeof value.value === 'string' ? new Date(value.value) : value.value;
+
+      parsed[key] = dateVal.toISOString();
+    } else {
+      parsed[key] = value.value;
+    }
   }
 
   return parsed;
@@ -196,11 +203,25 @@ function injectCreateHeaderFilter() {
       ThisFilter['value'],
       ThisFilter
     > => {
-      const valueDerivation = derived(baseState, {
-        from: (v) => v.value,
-        onChange: (next) =>
-          baseState.update((cur) => ({ ...cur, value: next }) as ThisFilter),
-      });
+      const valueDerivation =
+        filter?.valueType === 'date'
+          ? derived(baseState, {
+              from: (v) => {
+                if (typeof v.value === 'string') return new Date(v.value);
+                return v.value;
+              },
+              onChange: (next) =>
+                baseState.update(
+                  (cur) => ({ ...cur, value: next }) as ThisFilter,
+                ),
+            })
+          : derived(baseState, {
+              from: (v) => v.value,
+              onChange: (next) =>
+                baseState.update(
+                  (cur) => ({ ...cur, value: next }) as ThisFilter,
+                ),
+            });
 
       if (options)
         return createSelectState(valueDerivation, t, {
