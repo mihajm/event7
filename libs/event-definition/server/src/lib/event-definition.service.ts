@@ -3,6 +3,7 @@ import { removeEmptyKeys } from '@e7/common/object';
 import { EventDefinitionColumn } from '@e7/event-definition/db';
 import {
   CreateEventDefinitionDTO,
+  EventDefinition,
   EventDefinitionChangeEvent,
   UpdateEventDefinitionDTO,
 } from '@e7/event-definition/shared';
@@ -94,7 +95,7 @@ export class EventDefinitionService {
     ip: string,
     opt?: Omit<FindManyOptions<EventDefinitionColumn>, 'filters'>,
     queryParams?: ExpressRequest['query'],
-  ) {
+  ): Promise<{ items: EventDefinition[]; count: number }> {
     const resolvedOpt = await adPermissionFilters(
       ip,
       this.ads,
@@ -120,11 +121,10 @@ export class EventDefinitionService {
   async get(id: string, ip: string) {
     const found = await this.repo.findOne(id);
     if (found?.type !== 'ads') return found;
-
+    if (!found) throw new NotFoundException(`Event with id ${id} not found`);
     const ads = await this.ads.hasPermission(ip);
     if (ads) return found;
-
-    return null;
+    throw new UnauthorizedException(`Not allowed to get ads events`);
   }
 
   async create(e: CreateEventDefinitionDTO, ip: string, clientId?: string) {

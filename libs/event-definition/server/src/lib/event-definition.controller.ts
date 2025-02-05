@@ -1,6 +1,8 @@
 import {
   CreateEventDefinitionDTO,
   createEventDefinitionSchema,
+  EventDefinition,
+  EventDefinitionChangeEvent,
   UpdateEventDefinitionDTO,
   updateEventDefinitionSchema,
 } from '@e7/event-definition/shared';
@@ -11,7 +13,6 @@ import {
   Get,
   InternalServerErrorException,
   Ip,
-  NotFoundException,
   Param,
   ParseIntPipe,
   Patch,
@@ -25,7 +26,7 @@ import {
   Request as ExpressRequest,
   Response as ExpressResponse,
 } from 'express';
-import { map } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { fromError, isZodErrorLike } from 'zod-validation-error';
 import { EventDefinitionService } from './event-definition.service';
 
@@ -70,15 +71,15 @@ export class EventDefinitionController {
 
     return res
       .set('Content-Range', contentRange(count, offset ?? 0, limit ?? 10))
-      .json(items);
+      .json(items satisfies EventDefinition[]);
   }
 
   @Get(':id')
-  get(@Param('id') id: string, @Ip() ip: string) {
-    const found = this.svc.get(id, ip);
-
-    if (!found) throw new NotFoundException();
-    return found;
+  get(
+    @Param('id') id: string,
+    @Ip() ip: string,
+  ): Promise<EventDefinition | null> {
+    return this.svc.get(id, ip);
   }
 
   @Post()
@@ -86,7 +87,7 @@ export class EventDefinitionController {
     @Body() body: CreateEventDefinitionDTO,
     @Ip() ip: string,
     @Request() req: ExpressRequest,
-  ) {
+  ): Promise<EventDefinition | null> {
     try {
       const validated = createEventDefinitionSchema.parse(body);
       const clientId = req.headers['x-client-id'];
@@ -107,7 +108,7 @@ export class EventDefinitionController {
     @Body() body: UpdateEventDefinitionDTO,
     @Ip() ip: string,
     @Request() req: ExpressRequest,
-  ) {
+  ): Promise<EventDefinition | null> {
     try {
       const validated = updateEventDefinitionSchema.parse(body);
       const clientId = req.headers['x-client-id'];
@@ -125,6 +126,10 @@ export class EventDefinitionController {
 
   @Sse('changes/:id')
   changes(@Param('id') clientId: string, @Ip() ip: string) {
-    return this.svc.changes(clientId, ip).pipe(map((e) => JSON.stringify(e)));
+    const changes$ = this.svc.changes(
+      clientId,
+      ip,
+    ) satisfies Observable<EventDefinitionChangeEvent>;
+    return changes$.pipe(map((e) => JSON.stringify(e)));
   }
 }
