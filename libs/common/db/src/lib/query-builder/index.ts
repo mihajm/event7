@@ -13,12 +13,13 @@ export type FindManyOptions<TDef extends PgColumn> = {
   pagination?: PaginationOptions;
   sort?: SortParameter<ColumnName<TDef>>[];
   filters?: FilterEntry<TDef['name']>[];
+  search?: string;
 };
 
 export function buildFindMany<TSelect extends PgSelect, TDef extends PgColumn>(
   qb: TSelect,
   defMap: Map<string, TDef>,
-  opt?: FindManyOptions<TDef>,
+  opt?: Omit<FindManyOptions<TDef>, 'search'>,
 ) {
   if (!opt) return qb;
   qb = addPagination(qb, opt.pagination);

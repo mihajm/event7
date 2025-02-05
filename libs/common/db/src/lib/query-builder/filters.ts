@@ -247,6 +247,11 @@ function isKnownFilter<TDef extends PgColumn>(
   return KNOWN_SET.has(type) && defMap.has(name);
 }
 
+export type SearchOptions = {
+  value?: string;
+  resolve: (value: string) => SQL<unknown> | null;
+};
+
 export function toFilterEntries<TDef extends PgColumn>(
   defMap: Map<string, TDef>,
   query?: ExpressRequest['query'],

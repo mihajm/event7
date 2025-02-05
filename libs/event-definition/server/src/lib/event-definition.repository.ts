@@ -9,9 +9,10 @@ import {
   eventDefinition,
   EventDefinitionColumn,
   InsertDefinition,
+  resolveEventDefinitionSearch,
 } from '@e7/event-definition/db';
 import { Inject, Injectable } from '@nestjs/common';
-import { count, eq } from 'drizzle-orm';
+import { count, desc, eq, getTableColumns, sql } from 'drizzle-orm';
 
 type CreateEventDefinition = Omit<
   InsertDefinition,
@@ -32,16 +33,50 @@ export class EventDefinitionRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
   async findMany(opt?: FindManyOptions<EventDefinitionColumn>) {
+    const searchQuery = resolveEventDefinitionSearch(opt?.search);
+
+    const selectStatement = searchQuery
+      ? this.db
+          .select({
+            ...getTableColumns(eventDefinition),
+            rank: sql`ts_rank(
+              setweight(to_tsvector('english', ${eventDefinition.name}), 'A') ||
+              setweight(to_tsvector('english', ${eventDefinition.description}), 'B'),
+              websearch_to_tsquery('english', ${opt?.search})
+              )`,
+          })
+          .from(eventDefinition)
+          .where(searchQuery.where)
+          .orderBy((t) => [desc(t.rank)])
+      : this.db.select().from(eventDefinition);
+
     return buildFindMany(
-      this.db.select().from(eventDefinition).$dynamic(),
+      selectStatement.$dynamic(),
       EVENT_DEFINITION_COLUMN_MAP,
-      opt,
+      {
+        ...opt,
+      },
     ).execute();
   }
 
   async count(opt?: FindManyOptions<EventDefinitionColumn>) {
+    const searchQuery = resolveEventDefinitionSearch(opt?.search);
+
+    const selectStatement = searchQuery
+      ? this.db
+          .select({
+            ...getTableColumns(eventDefinition),
+            rank: sql`ts_rank(${searchQuery.match})`,
+            rankCd: sql`ts_rank_cd(${searchQuery.match})`,
+            count: count(),
+          })
+          .from(eventDefinition)
+          .where(searchQuery.where)
+          .orderBy((t) => [desc(t.rank), desc(t.rankCd)])
+      : this.db.select({ count: count() }).from(eventDefinition);
+
     return buildFindMany(
-      this.db.select({ count: count() }).from(eventDefinition).$dynamic(),
+      selectStatement.$dynamic(),
       EVENT_DEFINITION_COLUMN_MAP,
       {
         ...opt,

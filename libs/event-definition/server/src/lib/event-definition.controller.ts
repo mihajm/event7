@@ -43,7 +43,10 @@ export class EventDefinitionController {
     @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('sort') sort?: string | string[],
+    @Query('search') search?: string | string[],
   ) {
+    const searchQuery = Array.isArray(search) ? search.at(-1) : search;
+
     const { items, count } = await this.svc.listAndCount(
       ip,
       {
@@ -52,6 +55,7 @@ export class EventDefinitionController {
           limit: limit ?? 10,
         },
         sort: Array.isArray(sort) ? sort : sort ? [sort] : undefined,
+        search: searchQuery,
       },
       req.query,
     );
