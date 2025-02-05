@@ -138,6 +138,10 @@ import { TableState } from './table.component';
 
     .app-table-column-menu-item-button {
       margin-left: 1rem;
+
+      &:disabled mat-icon {
+        opacity: 0.33;
+      }
     }
 
     .app-column-menu-list-container {
