@@ -20,6 +20,10 @@ import { ArchiveEventTriggerComponent } from './archive-event-definition-dialog.
 import { EditEventTriggerComponent } from './edit-event-definition-dialog.component';
 import { EventDefinitionTypeStore } from './event-definition-type.store';
 import { EventDefinitionStore } from './event-definition.store';
+import {
+  EventStatusBadgeComponent,
+  injectDisplayStatus,
+} from './event-status-badge.component';
 import { injectNamespaceT } from './locale';
 
 const col = createColumnHelper<EventDefinition>();
@@ -39,25 +43,6 @@ function injectDisplayDate() {
       locale: dateFnsLocale,
       addSuffix: true,
     });
-  };
-}
-
-function injectDisplayStatus() {
-  const t = injectNamespaceT();
-  const translations: Record<
-    Required<EventDefinition>['status'],
-    string | undefined
-  > = {
-    active: t('eventDef.eventStatus.active'),
-    archived: t('eventDef.eventStatus.archived'),
-    draft: t('eventDef.eventStatus.draft'),
-    ready: t('eventDef.eventStatus.ready'),
-  };
-
-  return (status: EventDefinition['status']): string => {
-    if (!status) return '';
-
-    return translations[status] ?? status;
   };
 }
 
@@ -181,6 +166,7 @@ function createState() {
     CellDirective,
     ArchiveEventTriggerComponent,
     EditEventTriggerComponent,
+    EventStatusBadgeComponent,
   ],
   providers: [
     provideTableLocalization(() => {
@@ -192,6 +178,10 @@ function createState() {
   ],
   template: `
     <app-table [state]="state">
+      <app-event-status-badge
+        *appCell="'status'; let cell"
+        [status]="cell.source().status"
+      />
       <div *appCell="'actions'; let cell">
         <app-edit-event-trigger [state]="cell.source()" />
         <app-archive-event-trigger [state]="cell.source()" />

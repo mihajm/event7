@@ -3,43 +3,21 @@ import {
   Component,
   computed,
   inject,
+  input,
 } from '@angular/core';
 import { MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatTooltip } from '@angular/material/tooltip';
-import { injectSharedT } from '@e7/common/locale';
 import { injectDisableTooltips } from '@e7/common/settings';
 import { ThemeStore } from './theme.store';
 import { Theme } from './theme.type';
 
-type ThemeOption = {
+export type ThemeOption = {
   label: string;
   value: Theme['mode'];
   icon: string;
 };
-
-function injectOptions() {
-  const t = injectSharedT();
-
-  return [
-    {
-      icon: 'light_mode',
-      label: t('shared.themeMode.light'),
-      value: 'light',
-    },
-    {
-      icon: 'dark_mode',
-      label: t('shared.themeMode.dark'),
-      value: 'dark',
-    },
-    {
-      icon: 'brightness_4',
-      label: t('shared.themeMode.auto'),
-      value: 'auto',
-    },
-  ] satisfies ThemeOption[];
-}
 
 @Component({
   selector: 'app-theme-toggle',
@@ -64,24 +42,34 @@ function injectOptions() {
     </button>
 
     <mat-menu #menu>
-      @for (opt of options; track opt.value) {
-        <button type="button" mat-menu-item>
+      @for (opt of options(); track opt.value) {
+        <button
+          type="button"
+          mat-menu-item
+          (click)="store.changeMode(opt.value)"
+          [class.active]="opt.value === selectedOption().value"
+        >
           <mat-icon>{{ opt.icon }}</mat-icon>
           <span>{{ opt.label }}</span>
         </button>
       }
     </mat-menu>
   `,
-  styles: ``,
+  styles: `
+    .active,
+    .active mat-icon {
+      color: var(--mat-sys-primary);
+    }
+  `,
 })
 export class ThemeToggleComponent {
-  private readonly store = inject(ThemeStore);
+  protected readonly store = inject(ThemeStore);
   protected readonly disableTooltips = injectDisableTooltips();
-  protected readonly options = injectOptions();
+  readonly options = input.required<ThemeOption[]>();
 
   protected readonly selectedOption = computed(
     () =>
-      this.options.find((o) => o.value === this.store.theme().mode) ??
-      this.options[2],
+      this.options().find((o) => o.value === this.store.theme().mode) ??
+      this.options()[2],
   );
 }

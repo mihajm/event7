@@ -28,15 +28,17 @@ import { EventDefinitionStore } from './event-definition.store';
   styles: `
     :host {
       position: relative;
-      height: 100%;
+      max-height: calc(100% - 4rem);
       width: 100%;
       display: flex;
       box-sizing: border-box;
       padding: 1rem;
+      flex: 1;
 
       div {
         height: 100%;
         width: 100%;
+        overflow: hidden;
         mat-card {
           position: relative;
           overflow: hidden;

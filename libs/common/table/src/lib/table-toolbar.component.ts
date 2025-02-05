@@ -151,6 +151,11 @@ import { TableState } from './table.component';
 
     .app-table-column-menu-trigger {
       --mat-badge-container-overlap-offset: -14px;
+
+      .mat-badge-content {
+        background: var(--mat-sys-primary);
+        color: var(--mat-sys-on-primary);
+      }
     }
 
     .app-table-column-menu div.mat-mdc-menu-content {

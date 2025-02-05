@@ -13,6 +13,11 @@ export type OtherLocale = (typeof OTHER_LOCALES)[number];
 
 export const SUPPORETED_LOCALES = [DEFAULT_LOCALE, ...OTHER_LOCALES] as const;
 
+export const SUPPORTED_LOCALE_LABELS = {
+  'en-US': 'English',
+  'sl-SI': 'Slovenščina',
+} satisfies Record<SupportedLocale, string>;
+
 export type SupportedLocale = (typeof SUPPORETED_LOCALES)[number];
 
 export type StringPath<T> = T extends string

@@ -8,6 +8,7 @@ import {
 import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { routeParam } from '@e7/common/router';
 import { isSupportedLocale } from './inject-supported-locale';
+import { LayoutComponent } from './layout.component';
 import { DEFAULT_LOCALE } from './locale.type';
 import {
   injectDateFnsLocale,
@@ -17,8 +18,12 @@ import {
 @Component({
   selector: 'app-locale-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet],
-  template: `<router-outlet />`,
+  imports: [RouterOutlet, LayoutComponent],
+  template: `
+    <app-layout>
+      <router-outlet />
+    </app-layout>
+  `,
   providers: [
     {
       provide: LOCALE_ID,

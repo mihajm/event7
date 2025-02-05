@@ -8,6 +8,7 @@ const ns = createNamespace('shared', {
   },
   settings: {
     showTooltips: 'Show tooltips',
+    hideTooltips: 'Hide tooltips',
   },
   close: 'Close',
   confirm: 'Confirm',

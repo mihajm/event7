@@ -15,3 +15,7 @@ body {
   color: var(--mat-sys-on-background);
   font-family: Roboto, 'Helvetica Neue', sans-serif;
 }
+
+router-outlet {
+  display: contents;
+}

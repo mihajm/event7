@@ -1,4 +1,4 @@
-import { inject, Signal } from '@angular/core';
+import { inject, Injectable, Signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   ActivatedRoute,
@@ -6,10 +6,11 @@ import {
   NavigationEnd,
   Router,
 } from '@angular/router';
-import { Injectable } from '@nestjs/common';
 import { filter, map } from 'rxjs';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class RouterStore {
   private readonly router = inject(Router);
 

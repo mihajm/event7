@@ -8,6 +8,7 @@ export default createSharedTranslation('sl-SI', {
   },
   settings: {
     showTooltips: 'Prikaži namige',
+    hideTooltips: 'Skrij namige',
   },
   close: 'Zapri',
   confirm: 'Potrdi',

@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { LayoutComponent } from '@e7/common/layout';
 import { ThemeDirective } from '@e7/common/theme';
 
 @Component({
@@ -10,12 +9,8 @@ import { ThemeDirective } from '@e7/common/theme';
     class: 'mat-typography',
   },
   hostDirectives: [ThemeDirective],
-  imports: [LayoutComponent, RouterOutlet],
-  template: `
-    <app-layout>
-      <router-outlet />
-    </app-layout>
-  `,
+  imports: [RouterOutlet],
+  template: `<router-outlet />`,
   styles: `
     :host {
       display: contents;
