@@ -45,6 +45,13 @@
         "command": "drizzle-kit migrate --config=./src/db.config.ts",
         "cwd": "apps/server"
       }
+    },
+    "seed": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx ./src/seed.ts",
+        "cwd": "apps/server"
+      }
     }
   }
 }

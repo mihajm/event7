@@ -9,7 +9,7 @@
     "generate": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "drizzle-kit generate --config=./src/lib/config.ts",
+        "command": "drizzle-kit generate --config=./src/lib/event-definition.config.ts",
         "cwd": "libs/event-definition/db"
       }
     }

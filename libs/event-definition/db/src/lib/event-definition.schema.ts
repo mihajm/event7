@@ -45,9 +45,7 @@ export const eventDefinition = pgTable(
         'gin',
         sql`(
           setweight(to_tsvector('english', ${table.name}), 'A') ||
-          setweight(to_tsvector('english', ${table.description}), 'B') || 
-          setweight(to_tsvector('simple', ${table.type}), 'C') ||
-          setweight(to_tsvector('simple', ${table.status}), 'D')
+          setweight(to_tsvector('english', ${table.description}), 'B')
         )`,
       ),
     ];
