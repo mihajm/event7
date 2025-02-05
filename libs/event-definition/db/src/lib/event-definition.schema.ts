@@ -1,5 +1,5 @@
 import { ColumnName, SortParameter } from '@e7/common/db';
-import { SQL, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import {
   index,
   integer,
@@ -85,29 +85,4 @@ export function toEventDefinitionSort(
   const arr = Array.isArray(sort) ? sort : [sort];
 
   return arr.filter(isEventDefinitionSort);
-}
-
-type SearchQueries = {
-  match: SQL<unknown>;
-  where: SQL<unknown>;
-};
-
-export function resolveEventDefinitionSearch(
-  str?: string,
-): null | SearchQueries {
-  if (!str || str.trim().length === 0) return null;
-
-  const baseQuery = sql`
-    setweight(to_tsvector('english', ${eventDefinition.name}), 'A') ||
-    setweight(to_tsvector('english', ${eventDefinition.description}), 'B')
-  `;
-
-  const matchQuery = sql`(${baseQuery}, websearch_to_tsquery('english', ${str}) )`;
-
-  const whereQuery = sql`(${baseQuery}) @@ websearch_to_tsquery('english', ${str})`;
-
-  return {
-    match: matchQuery,
-    where: whereQuery,
-  };
 }
