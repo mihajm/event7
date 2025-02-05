@@ -1,77 +1,34 @@
 # Event7
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+## Getting started
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+### Installation
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/intro#learn-nx?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+Please ensure you have a modern version of node & npm installed before. At least node 18.20.6 is expected, as vanilla node fetch is used, developed & tested on 23.7.0. Run `npm install` in the root directory to install dependencies.
 
-## Finish your CI setup
+Docker + docker-compose are setup to generate a postgres image for development, however any postgres instance will work, simply configure the .env variables accordingly. To use the provided image run `docker-compose up` in the root directory
 
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/IUPdkaeHnW)
+### Environment configuration
 
+To configure the local environment variables for the server application please create a .env file in the root of the project, a .env.template file has been provided showcasing the expected configuration.
 
-## Run tasks
+_NX_DEAMON is set to false within the template due to a bug with the latest nx version & the nestjs runner causing command prompts to be opened on every save, due to this reload on save does not work for the nestjs application & it needs to be restarted before changes are applied. Changing the NX_DEAMON variable to true or removing it restores auto reloading functionality_
 
-To run tasks with Nx use:
+The frontend project uses the env.js file within the source files of the event7-client application. This gets bundled as an asset at build time & is expected to be replaced in a genuine deployment using a kubernetes config map or similar. The provided configuration matches what would be the chosen defaults for a local server instance.
 
-```sh
-npx nx <target> <project-name>
-```
+_Further steps require the environment to be configured_
 
-For example:
+### Migration & Seeding
 
-```sh
-npx nx build myproject
-```
+Database migration scripts are already pre-generated within libraries that require it, when setting up a new database instance ex. if you just ran `docker-compose up` on the included image for the first time you need to run the migration scripts to set up the various database tables, functions etc.. To run the migration use `npx nx run event7-server:migrate`.
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+A seed script is also available to pre-populate existing tables. After migration you can run `npx nx run event7-server:seed` to run seed the database. By default 100 entries are created, but you can configure it using the environment variable "SEED_COUNT" in the .env file or the terminal environment.
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+_Please note that due to the permission logic, running the server locally will result in you not being allowed to view event definitions with the type of "ads", because of this returned total count returned from an unlimited list query might yield less than the provided seed count_
 
-## Add new projects
+### Serving
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+Both the server & client applications have prepared "serve" nx executors you can run them similarly to the migration/seed scripts mentioned above:
 
-To install a new plugin you can use the `nx add` command. Here's an example of adding the React plugin:
-```sh
-npx nx add @nx/react
-```
-
-Use the plugin's generator to create new projects. For example, to create a new React app or library:
-
-```sh
-# Generate an app
-npx nx g @nx/react:app demo
-
-# Generate a library
-npx nx g @nx/react:lib some-lib
-```
-
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
-
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/getting-started/intro#learn-nx?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- Server: `npx nx run event7-server:serve`
+- Client: `npx nx run event7-client:serve`
