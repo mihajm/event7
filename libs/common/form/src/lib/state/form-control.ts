@@ -84,8 +84,10 @@ export function formControl<T, TParent = undefined>(
     markAsPristine,
     markAllAsPristine,
     reconcile: (newValue: T) => {
+      const wasDirty = untracked(dirty);
       initialValue.set(newValue);
-      value.set(newValue);
+
+      if (!wasDirty) value.set(newValue);
     },
   };
 }
