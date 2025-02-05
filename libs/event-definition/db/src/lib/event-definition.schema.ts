@@ -1,5 +1,7 @@
 import { ColumnName, SortParameter } from '@e7/common/db';
+import { sql } from 'drizzle-orm';
 import {
+  index,
   integer,
   pgEnum,
   pgTable,
@@ -23,18 +25,34 @@ export const eventDefinitionStatus = pgEnum('eventDefinitionStatus', [
   'archived',
 ]);
 
-export const eventDefinition = pgTable('eventDefinition', {
-  id: uuid()
-    .$defaultFn(() => v7())
-    .primaryKey(),
-  name: text().notNull(),
-  description: text().notNull(),
-  type: eventDefinitionType().notNull(),
-  priority: integer().notNull().default(0),
-  status: eventDefinitionStatus().notNull().default('draft'),
-  createdAt: timestamp().notNull().defaultNow(),
-  updatedAt: timestamp().notNull().defaultNow(),
-});
+export const eventDefinition = pgTable(
+  'eventDefinition',
+  {
+    id: uuid()
+      .$defaultFn(() => v7())
+      .primaryKey(),
+    name: text().notNull(),
+    description: text().notNull(),
+    type: eventDefinitionType().notNull(),
+    priority: integer().notNull().default(0),
+    status: eventDefinitionStatus().notNull().default('draft'),
+    createdAt: timestamp().notNull().defaultNow(),
+    updatedAt: timestamp().notNull().defaultNow(),
+  } as const,
+  (table) => {
+    return [
+      index('search').using(
+        'gin',
+        sql`(
+          setweight(to_tsvector('english', ${table.name}), 'A') ||
+          setweight(to_tsvector('english', ${table.description}), 'B') || 
+          setweight(to_tsvector('simple', ${table.type}), 'C') ||
+          setweight(to_tsvector('simple', ${table.status}), 'D')
+        )`,
+      ),
+    ];
+  },
+);
 
 export const EVENT_DEFINITION_COLUMNS = [
   eventDefinition.id,
