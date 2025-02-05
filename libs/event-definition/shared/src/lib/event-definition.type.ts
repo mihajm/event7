@@ -20,11 +20,11 @@ const eventDefinitionStatusSchema = z.enum([
 const eventDefinitionTypeSchema = z.enum(EVENT_DEFINITION_TYPES);
 
 const baseCreateSchema = {
-  id: z.string(),
-  name: z.string(),
-  description: z.string(),
+  id: z.string().nonempty(),
+  name: z.string().nonempty(),
+  description: z.string().nonempty(),
   type: eventDefinitionTypeSchema,
-  priority: z.number().optional(),
+  priority: z.number().int().min(0).max(10).optional(),
   status: eventDefinitionStatusSchema.optional(),
 } as const;
 

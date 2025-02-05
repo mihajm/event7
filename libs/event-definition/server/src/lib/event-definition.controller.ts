@@ -1,12 +1,17 @@
 import {
   CreateEventDefinitionDTO,
+  createEventDefinitionSchema,
   UpdateEventDefinitionDTO,
+  updateEventDefinitionSchema,
 } from '@e7/event-definition/shared';
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
+  InternalServerErrorException,
   Ip,
+  NotFoundException,
   Param,
   ParseIntPipe,
   Patch,
@@ -19,6 +24,7 @@ import {
   Request as ExpressRequest,
   Response as ExpressResponse,
 } from 'express';
+import { fromError, isZodErrorLike } from 'zod-validation-error';
 import { EventDefinitionService } from './event-definition.service';
 
 function contentRange(total: number, offset: number, limit: number) {
@@ -67,12 +73,21 @@ export class EventDefinitionController {
 
   @Get(':id')
   get(@Param('id') id: string, @Ip() ip: string) {
-    return this.svc.get(id, ip);
+    const found = this.svc.get(id, ip);
+
+    if (!found) throw new NotFoundException();
+    return found;
   }
 
   @Post()
   create(@Body() body: CreateEventDefinitionDTO, @Ip() ip: string) {
-    return this.svc.create(body, ip);
+    try {
+      const validated = createEventDefinitionSchema.parse(body);
+      return this.svc.create(validated, ip);
+    } catch (e) {
+      if (isZodErrorLike(e)) throw new BadRequestException(fromError(e));
+      throw new InternalServerErrorException();
+    }
   }
 
   @Patch(':id')
@@ -81,6 +96,12 @@ export class EventDefinitionController {
     @Body() body: UpdateEventDefinitionDTO,
     @Ip() ip: string,
   ) {
-    return this.svc.update(id, body, ip);
+    try {
+      const validated = updateEventDefinitionSchema.parse(body);
+      return this.svc.update(id, validated, ip);
+    } catch (e) {
+      if (isZodErrorLike(e)) throw new BadRequestException(fromError(e));
+      throw new InternalServerErrorException();
+    }
   }
 }

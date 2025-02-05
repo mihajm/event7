@@ -4,7 +4,12 @@ import {
   CreateEventDefinitionDTO,
   UpdateEventDefinitionDTO,
 } from '@e7/event-definition/shared';
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { Request as ExpressRequest } from 'express';
 import { AdsPermissionService } from './ads-permission.service';
 import {
@@ -118,7 +123,8 @@ export class EventDefinitionService {
   }
 
   async create(e: CreateEventDefinitionDTO, ip: string) {
-    if (e.type === 'ads' && !(await this.ads.hasPermission(ip))) return null;
+    if (e.type === 'ads' && !(await this.ads.hasPermission(ip)))
+      throw new UnauthorizedException(`Not allowed to create ads events`);
     return this.repo.create(e);
   }
 
@@ -127,8 +133,9 @@ export class EventDefinitionService {
     if (verified) return this.repo.update(id, parseUpdateDTO(id, e));
 
     const found = await this.repo.findOne(id);
-    // doesnt have permission to update this event
-    if (!found) return null;
+    if (!found) throw new NotFoundException(`Event with id ${id} not found`);
+    if (found.type === 'ads')
+      throw new UnauthorizedException(`Not allowed to update ads events`);
 
     return this.repo.update(id, parseUpdateDTO(id, e));
   }
