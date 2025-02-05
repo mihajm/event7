@@ -54,7 +54,7 @@ export class EventDefinitionController {
     @Query('sort') sort?: string | string[],
     @Query('search') search?: string | string[],
   ) {
-    const searchQuery = Array.isArray(search) ? search.at(-1) : search;
+    const searchQuery = Array.isArray(search) ? search.at(0) : search;
 
     const { items, count } = await this.svc.listAndCount(
       ip,
