@@ -124,8 +124,8 @@ export class EventDefinitionController {
     }
   }
 
-  @Sse('changes/:id')
-  changes(@Param('id') clientId: string, @Ip() ip: string) {
+  @Sse('changes/:clientId')
+  changes(@Param('clientId') clientId: string, @Ip() ip: string) {
     const changes$ = this.svc.changes(
       clientId,
       ip,
