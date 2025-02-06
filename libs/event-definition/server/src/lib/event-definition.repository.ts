@@ -2,6 +2,7 @@ import {
   createFindMany,
   DRIZZLE,
   FindManyOptions,
+  PaginationOptions,
   type Database,
 } from '@e7/common/db';
 import {
@@ -28,6 +29,29 @@ export const EVENT_DEFINITION_COLUMN_MAP = new Map(
   EVENT_DEFINITION_COLUMNS.map((c) => [c.name, c]),
 );
 
+const MAX_COUNT = 10000;
+
+function resolveMaxCountLimit(
+  pagination?: PaginationOptions,
+): Required<PaginationOptions> {
+  const request = {
+    limit: pagination?.limit ?? 10,
+    offset: pagination?.offset ?? 0,
+  };
+
+  if (request.offset + request.limit < MAX_COUNT) {
+    return {
+      offset: 0,
+      limit: MAX_COUNT,
+    };
+  }
+
+  return {
+    offset: 0,
+    limit: request.offset + request.limit + 1,
+  };
+}
+
 @Injectable()
 export class EventDefinitionRepository {
   private readonly buildFindMany = createFindMany(
@@ -49,17 +73,19 @@ export class EventDefinitionRepository {
   }
 
   async count(opt?: FindManyOptions<EventDefinitionColumn>) {
+    const pagination = resolveMaxCountLimit(opt?.pagination);
     return this.buildCountFindMany({
       ...opt,
       sort: undefined,
-      pagination: undefined,
+      pagination,
     })
       .execute()
       .then((r) => {
         const count = +(r.at(0)?.count ?? 0);
         if (isNaN(count)) return 0;
         return count;
-      });
+      })
+      .catch(() => 0);
   }
 
   async findOne(id: string) {
