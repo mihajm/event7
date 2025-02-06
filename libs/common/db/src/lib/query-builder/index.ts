@@ -33,3 +33,27 @@ export function createFindMany<TSelect extends PgSelect, TDef extends PgColumn>(
     return qb;
   };
 }
+
+const MAX_COUNT = 10000;
+
+export function resolveMaxCountLimit(
+  pagination?: PaginationOptions,
+  maxLimit = MAX_COUNT,
+): Required<PaginationOptions> {
+  const request = {
+    limit: pagination?.limit ?? 10,
+    offset: pagination?.offset ?? 0,
+  };
+
+  if (request.offset + request.limit < maxLimit) {
+    return {
+      offset: 0,
+      limit: maxLimit,
+    };
+  }
+
+  return {
+    offset: 0,
+    limit: request.offset + request.limit + 1,
+  };
+}
