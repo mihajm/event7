@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { computed, Signal, WritableSignal } from '@angular/core';
+import { computed, Signal, untracked, WritableSignal } from '@angular/core';
 import { values } from '@e7/common/object';
 import { DerivedSignal } from '@e7/common/reactivity';
 import {
@@ -80,12 +80,13 @@ export function formGroup<
   };
 
   const reconcile = (newValue: T) => {
-    ctrl.reconcile(newValue, true);
     derivationsArray.forEach((d) => {
       const from = d.from;
       if (!from) return;
       d.reconcile(from(newValue));
     });
+
+    ctrl.reconcile({ ...newValue, ...untracked(ctrl.value) }, true);
   };
 
   return {

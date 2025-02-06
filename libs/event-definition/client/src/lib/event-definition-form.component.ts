@@ -41,6 +41,7 @@ export function toNullable(e: EventDefinition | null): NullableEventDefinition {
 }
 
 type CreateEventChildren = {
+  status: StringState<NullableEventDefinition>;
   name: StringState<NullableEventDefinition>;
   description: StringState<NullableEventDefinition>;
   type: SelectState<Required<EventDefinition>['type'], NullableEventDefinition>;
@@ -83,7 +84,25 @@ export function injectCreateFormState() {
     }
     const value = mutable(nullable);
 
+    const status = createStringState(
+      derived(value, {
+        from: (v) => v.status,
+        onChange: (v) => {
+          value.mutate((cur) => {
+            cur.status = v;
+            return cur;
+          });
+        },
+      }),
+      t,
+      {
+        readonly: () => true,
+        label: () => t('eventDef.status'),
+      },
+    );
+
     const children: CreateEventChildren = {
+      status,
       name: createStringState(
         derived(value, {
           from: (v) => v.name,
@@ -96,6 +115,7 @@ export function injectCreateFormState() {
         }),
         t,
         {
+          readonly: () => status.value() === 'archived',
           validation: () => ({
             required: true,
             blanks: true,
@@ -120,6 +140,7 @@ export function injectCreateFormState() {
             required: true,
             blanks: true,
           }),
+          readonly: () => status.value() === 'archived',
           label: () => t('eventDef.description'),
         },
       ),
@@ -135,6 +156,7 @@ export function injectCreateFormState() {
         }),
         t,
         {
+          readonly: () => status.value() === 'archived',
           required: () => true,
           label: () => t('eventDef.type'),
           display: () => (v) => {
@@ -156,6 +178,7 @@ export function injectCreateFormState() {
         }),
         t,
         {
+          readonly: () => status.value() === 'archived',
           label: () => t('eventDef.priority'),
           validation: () => ({
             required: true,

@@ -93,7 +93,12 @@ function fromNullableToUpdate(
       <button type="button" mat-button [mat-dialog-close]="null">
         {{ closeLabel }}
       </button>
-      <button type="button" mat-flat-button (click)="confirm()">
+      <button
+        type="button"
+        mat-flat-button
+        (click)="confirm()"
+        [disabled]="isArchived()"
+      >
         {{ confirmLabel }}
       </button>
     </footer>
@@ -160,6 +165,10 @@ export class EditEventDefinitionDialogComponent {
       return this.stateFactory(source, prev?.value);
     },
   });
+
+  readonly isArchived = computed(
+    () => this.data.source().status === 'archived',
+  );
 
   protected readonly title = computed(() =>
     this.t('shared.editItem', {
