@@ -91,7 +91,6 @@ export function formControl<T, TParent = undefined>(
       const wasDirty = untracked(dirty);
 
       setTimeout(() => {
-        console.log(wasDirty, untracked(label));
         initialValue.set(newValue);
         markAsTouched();
 
