@@ -20,6 +20,10 @@ export default createEventDefTranslation('sl-SI', {
   failedToUpdate: 'Posodabljanje definicije dogodka {name} ni uspelo',
   failedToCreate: 'Ustvarjanje definicije dogodka {name} ni uspelo',
   createdWithPriority: 'Ustvarjeno {date} s prioriteto',
+  currentlyOpenEventWasArchived:
+    'Trenutno odprt dogodek je arhiviral drug uporabnik',
+  currentlyOpenEventWasUpdated:
+    'Trenutno odprt dogodek je posodobil drug uporabnik, vaše spremembe so bile ohranjene',
   eventStatus: {
     active: 'Aktivno',
     archived: 'Arhivirano',

@@ -20,6 +20,10 @@ const ns = createNamespace('eventDef', {
   failedToUpdate: 'Failed to update event definition: {name}',
   failedToCreate: 'Failed to create event definition: {name}',
   createdWithPriority: 'Created {date} with priority',
+  currentlyOpenEventWasArchived:
+    'The currently open event was archived by another user',
+  currentlyOpenEventWasUpdated:
+    'The currently open event was updated by another user, your changes have been preserved',
   eventStatus: {
     active: 'Active',
     archived: 'Archived',

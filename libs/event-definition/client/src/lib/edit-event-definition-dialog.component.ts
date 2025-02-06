@@ -10,7 +10,7 @@ import {
   Signal,
   untracked,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -22,11 +22,12 @@ import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { keys } from '@e7/common/object';
 import { injectDisableTooltips } from '@e7/common/settings';
+import { SnackService } from '@e7/common/snack';
 import {
   EventDefinition,
   UpdateEventDefinitionDTO,
 } from '@e7/event-definition/shared';
-import { first, Subscription } from 'rxjs';
+import { first, skip, Subscription } from 'rxjs';
 import {
   CreateUpdateEventState,
   EventDefinitionFormComponent,
@@ -183,6 +184,25 @@ export class EditEventDefinitionDialogComponent {
         EditEventDefinitionDialogReturn
       >
     >(MatDialogRef);
+
+  constructor() {
+    const snack = inject(SnackService);
+    toObservable(this.data.source)
+      .pipe(skip(1), takeUntilDestroyed())
+      .subscribe((v) => {
+        const wasArchived = v.status === 'archived';
+
+        return snack.open(
+          {
+            message: wasArchived
+              ? this.t('eventDef.currentlyOpenEventWasArchived')
+              : this.t('eventDef.currentlyOpenEventWasUpdated'),
+            type: 'info',
+          },
+          5000,
+        );
+      });
+  }
 
   protected confirm() {
     const state = untracked(this.state);
