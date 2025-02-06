@@ -25,7 +25,7 @@ export type FormControlSignal<T, TParent = undefined> = {
   markAllAsTouched: () => void;
   markAsPristine: () => void;
   markAllAsPristine: () => void;
-  reconcile: (newValue: T) => void;
+  reconcile: (newValue: T, noSet?: boolean) => void;
   from?: DerivedSignal<TParent, T>['from'];
 };
 
@@ -68,13 +68,14 @@ export function formControl<T, TParent = undefined>(
   const markAsPristine = () => touched.set(false);
   const markAllAsPristine = markAsPristine;
 
+  const label = computed(() => opt?.label?.() ?? '');
   return {
     id: opt?.id?.() ?? v7(),
     value,
     dirty,
     touched,
     error,
-    label: computed(() => opt?.label?.() ?? ''),
+    label,
     required: computed(() => opt?.required?.() ?? false),
     disabled,
     readonly,
@@ -83,11 +84,19 @@ export function formControl<T, TParent = undefined>(
     markAllAsTouched,
     markAsPristine,
     markAllAsPristine,
-    reconcile: (newValue: T) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    from: (isSignal(initial) ? initial.from : undefined) as any,
+    reconcile: (newValue: T, noSet = false) => {
+      if (newValue === untracked(value)) return;
       const wasDirty = untracked(dirty);
-      initialValue.set(newValue);
 
-      if (!wasDirty) value.set(newValue);
+      setTimeout(() => {
+        console.log(wasDirty, untracked(label));
+        initialValue.set(newValue);
+        markAsTouched();
+
+        if (!wasDirty && !noSet) value.set(newValue);
+      });
     },
   };
 }

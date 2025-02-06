@@ -80,7 +80,7 @@ export function formGroup<
   };
 
   const reconcile = (newValue: T) => {
-    ctrl.reconcile(newValue);
+    ctrl.reconcile(newValue, true);
     derivationsArray.forEach((d) => {
       const from = d.from;
       if (!from) return;
