@@ -31,7 +31,7 @@ export function registerLocale<
     const locale = injectSupportedLocale();
     const store = injectLocaleStore();
 
-    return <TPath extends NamespacePath>(...args: TPath) => {
+    return <TPath extends NamespacePath>(...args: TPath): string => {
       const [path, params] = args;
 
       const flatPath = path.replaceAll('.', LOCALE_DELIM);

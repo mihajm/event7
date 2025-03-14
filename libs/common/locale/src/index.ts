@@ -1,5 +1,6 @@
 export * from './lib/compile-locale';
 
+export * from './lib/localize.directive';
 export * from './lib/provide-localized-router';
 export * from './lib/register-locale';
 export * from './lib/resolver-date-fns-locale';
