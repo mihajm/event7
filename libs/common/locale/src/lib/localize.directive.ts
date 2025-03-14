@@ -16,11 +16,13 @@ import {
 import { injectSharedT, SharedNamespacePath } from './shared';
 import type en from './shared/shared.namespace';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type inferTPath<TTranslation extends CompiledTranslation<any, DefaultLocale>> =
   | inferPathParams<TTranslation>
   | SharedNamespacePath;
 
 type NonParamTranslations<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TTranslation extends CompiledTranslation<any, DefaultLocale>,
   TPath extends
     | inferPathParams<TTranslation>
