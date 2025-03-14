@@ -16,7 +16,7 @@ import {
   inferTranslation,
   OtherLocale,
 } from './locale.type';
-import { SharedNamespacePath } from './shared';
+import type { SharedNamespacePath } from './shared';
 
 export function registerLocale<
   TDefault extends CompiledTranslation<any, DefaultLocale>,
